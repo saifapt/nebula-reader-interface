@@ -61,7 +61,31 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Custom neon colors
+				neon: {
+					glow: 'hsl(var(--neon-glow))',
+					purple: 'hsl(var(--neon-purple))',
+					green: 'hsl(var(--neon-green))'
+				},
+				surface: {
+					dark: 'hsl(var(--surface-dark))',
+					darker: 'hsl(var(--surface-darker))',
+					light: 'hsl(var(--surface-light))'
 				}
+			},
+			backgroundImage: {
+				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-surface': 'var(--gradient-surface)',
+				'gradient-glow': 'var(--gradient-glow)'
+			},
+			boxShadow: {
+				'glow-primary': 'var(--glow-primary)',
+				'glow-accent': 'var(--glow-accent)',
+				'elevated': 'var(--shadow-elevated)'
+			},
+			transitionProperty: {
+				'glow': 'box-shadow, border-color'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
