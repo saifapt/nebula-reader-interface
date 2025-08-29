@@ -1,17 +1,23 @@
 import {
-  ChevronFirst,
-  ChevronLeft,
-  ChevronRight,
-  ChevronLast,
   Bookmark,
   StickyNote,
-  Highlighter,
-  ZoomIn,
-  ZoomOut,
   Moon,
   Sun,
   Bot,
   X,
+  PenTool,
+  Highlighter,
+  Eraser,
+  Type,
+  ArrowRight,
+  Circle,
+  Square,
+  Palette,
+  Settings,
+  FileText,
+  Clock,
+  Hash,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +26,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 interface LeftSidebarProps {
   isOpen: boolean;
@@ -30,17 +38,30 @@ interface LeftSidebarProps {
   onToggleDarkMode: () => void;
 }
 
-const tools = [
-  { icon: ChevronFirst, label: "First Page", id: "first" },
-  { icon: ChevronLeft, label: "Previous Page", id: "previous" },
-  { icon: ChevronRight, label: "Next Page", id: "next" },
-  { icon: ChevronLast, label: "Last Page", id: "last" },
-  { icon: Bookmark, label: "Bookmark Page", id: "bookmark" },
-  { icon: StickyNote, label: "Add Note", id: "note" },
-  { icon: Highlighter, label: "Highlight", id: "highlight" },
-  { icon: ZoomIn, label: "Zoom In", id: "zoom-in" },
-  { icon: ZoomOut, label: "Zoom Out", id: "zoom-out" },
-  { icon: Bot, label: "AI Assistant", id: "ai" },
+const drawingTools = [
+  { icon: PenTool, label: "Pen", id: "pen" },
+  { icon: Highlighter, label: "Highlighter", id: "highlighter" },
+  { icon: Eraser, label: "Eraser", id: "eraser" },
+  { icon: Type, label: "Text", id: "text" },
+  { icon: ArrowRight, label: "Arrow", id: "arrow" },
+  { icon: Circle, label: "Circle", id: "circle" },
+  { icon: Square, label: "Rectangle", id: "rectangle" },
+  { icon: Palette, label: "Colors", id: "colors" },
+  { icon: Settings, label: "Tool Settings", id: "tool-settings" },
+];
+
+// Mock data for bookmarks and notes
+const mockBookmarks = [
+  { id: 1, page: 15, title: "Chapter 3: Introduction", timestamp: "2 hours ago" },
+  { id: 2, page: 42, title: "Key Concepts", timestamp: "1 day ago" },
+  { id: 3, page: 87, title: "Case Study Analysis", timestamp: "3 days ago" },
+  { id: 4, page: 120, title: "Important Formula", timestamp: "5 days ago" },
+];
+
+const mockNotes = [
+  { id: 1, page: 23, title: "Important Formula", content: "E = mc²", timestamp: "1 hour ago" },
+  { id: 2, page: 35, title: "Discussion Question", content: "How does this relate...", timestamp: "4 hours ago" },
+  { id: 3, page: 56, title: "Key Insight", content: "The author's perspective...", timestamp: "1 day ago" },
 ];
 
 export const LeftSidebar = ({
@@ -73,85 +94,89 @@ export const LeftSidebar = ({
       </div>
 
       {/* Tool Buttons */}
-      <div className="flex-1 p-4 space-y-3">
+      <div className="flex-1 p-4 space-y-4 overflow-hidden">
         <TooltipProvider>
-          {/* Navigation Tools */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Navigation
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {tools.slice(0, 4).map((tool) => (
-                <Tooltip key={tool.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleToolClick(tool.id)}
-                      className="hover-glow flex flex-col items-center gap-1 h-auto py-3 bg-surface-dark border-border"
-                    >
-                      <tool.icon className="h-4 w-4" />
-                      <span className="text-xs">{tool.label.split(' ')[0]}</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-surface-dark border-border">
-                    {tool.label}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
+          {/* Drawing Tools - Only show on bigger screens */}
+          {!isMobile && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                Drawing Tools
+              </h3>
+              <div className="grid grid-cols-3 gap-2">
+                {drawingTools.map((tool) => (
+                  <Tooltip key={tool.id}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToolClick(tool.id)}
+                        className="hover-glow flex flex-col items-center gap-1 h-auto py-3 bg-surface-dark border-border"
+                      >
+                        <tool.icon className="h-4 w-4" />
+                        <span className="text-xs">{tool.label.split(' ')[0]}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="bg-surface-dark border-border">
+                      {tool.label}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
             </div>
+          )}
+
+          {/* Saved Bookmarks */}
+          <div className="space-y-2 flex-1 min-h-0">
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">
+              Saved Bookmarks
+            </h3>
+            <ScrollArea className="h-32">
+              <div className="space-y-2">
+                {mockBookmarks.map((bookmark) => (
+                  <Button
+                    key={bookmark.id}
+                    variant="outline"
+                    onClick={() => handleToolClick(`bookmark-${bookmark.id}`)}
+                    className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border h-auto py-2"
+                  >
+                    <Bookmark className="h-4 w-4 text-primary" />
+                    <div className="flex-1 text-left">
+                      <div className="text-sm truncate">{bookmark.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Page {bookmark.page} • {bookmark.timestamp}
+                      </div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
 
-          {/* Annotation Tools */}
-          <div className="space-y-2">
+          {/* Saved Notes */}
+          <div className="space-y-2 flex-1 min-h-0">
             <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Annotations
+              Saved Notes
             </h3>
-            <div className="space-y-2">
-              {tools.slice(4, 7).map((tool) => (
-                <Tooltip key={tool.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleToolClick(tool.id)}
-                      className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
-                    >
-                      <tool.icon className="h-4 w-4" />
-                      {tool.label}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-surface-dark border-border">
-                    {tool.label}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </div>
-          </div>
-
-          {/* View Tools */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              View
-            </h3>
-            <div className="space-y-2">
-              {tools.slice(7, 9).map((tool) => (
-                <Tooltip key={tool.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleToolClick(tool.id)}
-                      className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
-                    >
-                      <tool.icon className="h-4 w-4" />
-                      {tool.label}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-surface-dark border-border">
-                    {tool.label}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </div>
+            <ScrollArea className="h-32">
+              <div className="space-y-2">
+                {mockNotes.map((note) => (
+                  <Button
+                    key={note.id}
+                    variant="outline"
+                    onClick={() => handleToolClick(`note-${note.id}`)}
+                    className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border h-auto py-2"
+                  >
+                    <StickyNote className="h-4 w-4 text-secondary" />
+                    <div className="flex-1 text-left">
+                      <div className="text-sm truncate">{note.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Page {note.page} • {note.timestamp}
+                      </div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
 
           {/* Settings */}
