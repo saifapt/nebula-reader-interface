@@ -24,6 +24,7 @@ import {
 interface LeftSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  onToggle?: () => void;
   isMobile: boolean;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
@@ -45,6 +46,7 @@ const tools = [
 export const LeftSidebar = ({
   isOpen,
   onClose,
+  onToggle,
   isMobile,
   isDarkMode,
   onToggleDarkMode,
@@ -59,8 +61,12 @@ export const LeftSidebar = ({
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
         <h2 className="font-semibold text-lg">Tools</h2>
-        {isMobile && (
-          <Button variant="ghost" size="icon" onClick={onClose}>
+        {(isMobile || onToggle) && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={isMobile ? onClose : onToggle}
+          >
             <X className="h-5 w-5" />
           </Button>
         )}
@@ -220,10 +226,25 @@ export const LeftSidebar = ({
   return (
     <div
       className={`border-r border-border surface-gradient transition-all duration-300 ${
-        isOpen ? "w-64" : "w-0"
+        isOpen ? "w-64" : "w-12"
       } overflow-hidden`}
     >
-      {sidebarContent}
+      {isOpen ? sidebarContent : (
+        // Collapsed state - mini sidebar with icons
+        <div className="flex flex-col h-full p-2 gap-2">
+          {/* Toggle button */}
+          {onToggle && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggle}
+              className="w-8 h-8 shrink-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

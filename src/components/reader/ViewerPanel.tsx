@@ -1,20 +1,24 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, FileText, RotateCw, Download, Share } from "lucide-react";
+import { BookOpen, FileText, RotateCw, Download, Share, Bot } from "lucide-react";
 
 interface ViewerPanelProps {
   isFlipbookMode: boolean;
   isMobile: boolean;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onAIAssistantOpen: () => void;
 }
 
-export const ViewerPanel = ({ isFlipbookMode, isMobile }: ViewerPanelProps) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 200;
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-  };
+export const ViewerPanel = ({ 
+  isFlipbookMode, 
+  isMobile, 
+  currentPage, 
+  totalPages, 
+  onPageChange,
+  onAIAssistantOpen 
+}: ViewerPanelProps) => {
 
   return (
     <div className="flex flex-col h-full">
@@ -96,35 +100,51 @@ export const ViewerPanel = ({ isFlipbookMode, isMobile }: ViewerPanelProps) => {
           )}
         </div>
 
-        {/* Page Navigation */}
+        {/* Desktop Navigation & Mobile AI Assistant */}
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="bg-surface-light border-border hover-glow"
-          >
-            Previous
-          </Button>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Page</span>
-            <Badge variant="secondary" className="bg-primary text-primary-foreground">
-              {currentPage}
-            </Badge>
-            <span className="text-sm text-muted-foreground">of {totalPages}</span>
-          </div>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="bg-surface-light border-border hover-glow"
-          >
-            Next
-          </Button>
+          {!isMobile ? (
+            // Desktop: Page Navigation
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="bg-surface-light border-border hover-glow"
+              >
+                Previous
+              </Button>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Page</span>
+                <Badge variant="secondary" className="bg-primary text-primary-foreground">
+                  {currentPage}
+                </Badge>
+                <span className="text-sm text-muted-foreground">of {totalPages}</span>
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="bg-surface-light border-border hover-glow"
+              >
+                Next
+              </Button>
+            </>
+          ) : (
+            // Mobile: AI Assistant Icon
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onAIAssistantOpen}
+              className="bg-gradient-primary hover:opacity-90 glow-primary flex items-center gap-2"
+            >
+              <Bot className="h-4 w-4" />
+              AI Assistant
+            </Button>
+          )}
         </div>
       </div>
     </div>

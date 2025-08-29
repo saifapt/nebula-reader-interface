@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Bookmark, FileText, X, Clock, Hash } from "lucide-react";
+import { Search, Bookmark, FileText, X, Clock, Hash, Bot, Send, Menu, Moon, Sun, Settings, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +9,10 @@ import { Badge } from "@/components/ui/badge";
 interface RightSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  onToggle?: () => void;
   isMobile: boolean;
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
 }
 
 // Mock data
@@ -64,7 +67,7 @@ const mockNotes = [
   },
 ];
 
-export const RightSidebar = ({ isOpen, onClose, isMobile }: RightSidebarProps) => {
+export const RightSidebar = ({ isOpen, onClose, onToggle, isMobile, isDarkMode, onToggleDarkMode }: RightSidebarProps) => {
   const [activeTab, setActiveTab] = useState("bookmarks");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -81,151 +84,114 @@ export const RightSidebar = ({ isOpen, onClose, isMobile }: RightSidebarProps) =
       note.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const sidebarContent = (
+  // Desktop: Chatbot Content
+  const chatbotContent = (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
-        <h2 className="font-semibold text-lg">Library</h2>
-        {isMobile && (
-          <Button variant="ghost" size="icon" onClick={onClose}>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center glow-primary">
+            <Bot className="h-4 w-4 text-primary-foreground" />
+          </div>
+          <h2 className="font-semibold text-lg">AI Assistant</h2>
+        </div>
+        {onToggle && (
+          <Button variant="ghost" size="icon" onClick={onToggle}>
             <X className="h-5 w-5" />
           </Button>
         )}
       </div>
 
-      {/* Search */}
-      <div className="p-4 border-b border-border">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search bookmarks and notes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-surface-dark border-border hover-glow focus:glow-primary"
-          />
+      {/* Chat placeholder */}
+      <div className="flex-1 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-primary/20 flex items-center justify-center">
+            <Bot className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">AI Reading Assistant</h3>
+          <p className="text-muted-foreground mb-4 max-w-sm">
+            Ask questions about the document, get summaries, or request explanations.
+          </p>
+          <Button className="bg-gradient-primary hover:opacity-90 glow-primary">
+            Start Conversation
+          </Button>
         </div>
       </div>
+    </div>
+  );
 
-      {/* Tabs */}
-      <div className="flex-1 flex flex-col">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 mx-4 mt-4 bg-surface-dark">
-            <TabsTrigger
-              value="bookmarks"
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <Bookmark className="h-4 w-4 mr-2" />
-              Bookmarks
-            </TabsTrigger>
-            <TabsTrigger
-              value="notes"
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Notes
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="bookmarks" className="flex-1 mt-4">
-            <ScrollArea className="h-full custom-scrollbar">
-              <div className="px-4 space-y-3">
-                {filteredBookmarks.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Bookmark className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No bookmarks found</p>
-                  </div>
-                ) : (
-                  filteredBookmarks.map((bookmark) => (
-                    <div
-                      key={bookmark.id}
-                      className="p-3 rounded-lg bg-surface-dark border border-border hover-glow cursor-pointer transition-all"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-sm">{bookmark.title}</h4>
-                        <Badge variant="outline" className="text-xs">
-                          Page {bookmark.page}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                        {bookmark.preview}
-                      </p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {bookmark.timestamp}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="notes" className="flex-1 mt-4">
-            <ScrollArea className="h-full custom-scrollbar">
-              <div className="px-4 space-y-3">
-                {filteredNotes.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No notes found</p>
-                  </div>
-                ) : (
-                  filteredNotes.map((note) => (
-                    <div
-                      key={note.id}
-                      className="p-3 rounded-lg bg-surface-dark border border-border hover-glow cursor-pointer transition-all"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-sm">{note.title}</h4>
-                        <Badge variant="outline" className="text-xs">
-                          Page {note.page}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-3 line-clamp-3">
-                        {note.content}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {note.timestamp}
-                        </div>
-                        <div className="flex gap-1">
-                          {note.tags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="text-xs px-1.5 py-0.5 bg-accent/20 text-accent"
-                            >
-                              <Hash className="h-2 w-2 mr-1" />
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
+  // Mobile: Navigation Content
+  const navigationContent = (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <h2 className="font-semibold text-lg">Menu</h2>
+        <Button variant="ghost" size="icon" onClick={onClose}>
+          <X className="h-5 w-5" />
+        </Button>
       </div>
 
-      {/* Footer Actions */}
-      <div className="p-4 border-t border-border space-y-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full bg-surface-dark border-border hover-glow"
-        >
-          Export {activeTab === "bookmarks" ? "Bookmarks" : "Notes"}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full bg-surface-dark border-border hover-glow"
-        >
-          Sync to Cloud
-        </Button>
+      {/* Navigation Items */}
+      <div className="flex-1 p-4 space-y-3">
+        {/* Bookmarks Section */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Bookmarks</h3>
+          <div className="space-y-2">
+            {mockBookmarks.slice(0, 3).map((bookmark) => (
+              <Button
+                key={bookmark.id}
+                variant="outline"
+                className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
+              >
+                <Bookmark className="h-4 w-4" />
+                <div className="flex-1 text-left">
+                  <div className="text-sm">{bookmark.title}</div>
+                  <div className="text-xs text-muted-foreground">Page {bookmark.page}</div>
+                </div>
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes Section */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Recent Notes</h3>
+          <div className="space-y-2">
+            {mockNotes.slice(0, 2).map((note) => (
+              <Button
+                key={note.id}
+                variant="outline"
+                className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
+              >
+                <FileText className="h-4 w-4" />
+                <div className="flex-1 text-left">
+                  <div className="text-sm">{note.title}</div>
+                  <div className="text-xs text-muted-foreground">Page {note.page}</div>
+                </div>
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Settings */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Settings</h3>
+          <Button
+            variant="outline"
+            onClick={onToggleDarkMode}
+            className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
+          >
+            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {isDarkMode ? "Light Mode" : "Dark Mode"}
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
+          >
+            <Settings className="h-4 w-4" />
+            Preferences
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -247,7 +213,7 @@ export const RightSidebar = ({ isOpen, onClose, isMobile }: RightSidebarProps) =
             isOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          {sidebarContent}
+          {navigationContent}
         </div>
       </>
     );
@@ -256,10 +222,25 @@ export const RightSidebar = ({ isOpen, onClose, isMobile }: RightSidebarProps) =
   return (
     <div
       className={`border-l border-border surface-gradient transition-all duration-300 ${
-        isOpen ? "w-80" : "w-0"
+        isOpen ? "w-80" : "w-12"
       } overflow-hidden`}
     >
-      {sidebarContent}
+      {isOpen ? chatbotContent : (
+        // Collapsed state - mini sidebar with icons
+        <div className="flex flex-col h-full p-2 gap-2">
+          {/* Toggle button */}
+          {onToggle && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggle}
+              className="w-8 h-8 shrink-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
