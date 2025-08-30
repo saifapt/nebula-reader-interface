@@ -1,1 +1,16 @@
 project_id = "rrjckgcpcmtvgfkhxewc"
+
+[functions.upload-pdf]
+verify_jwt = true
+
+[functions.pdf-viewer]
+verify_jwt = false
+
+[functions.bookmarks]
+verify_jwt = true
+
+[functions.notes]
+verify_jwt = true
+
+[functions.drawings]
+verify_jwt = true
