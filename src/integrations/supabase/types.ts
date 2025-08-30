@@ -14,7 +14,153 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookmarks: {
+        Row: {
+          created_at: string | null
+          id: string
+          page_number: number
+          pdf_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          page_number: number
+          pdf_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          page_number?: number
+          pdf_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_pdf_id_fkey"
+            columns: ["pdf_id"]
+            isOneToOne: false
+            referencedRelation: "pdfs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drawings: {
+        Row: {
+          created_at: string | null
+          drawing_data: Json
+          id: string
+          page_number: number
+          pdf_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          drawing_data: Json
+          id?: string
+          page_number: number
+          pdf_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          drawing_data?: Json
+          id?: string
+          page_number?: number
+          pdf_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drawings_pdf_id_fkey"
+            columns: ["pdf_id"]
+            isOneToOne: false
+            referencedRelation: "pdfs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          created_at: string | null
+          id: string
+          note_text: string
+          page_number: number
+          pdf_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          note_text: string
+          page_number: number
+          pdf_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          note_text?: string
+          page_number?: number
+          pdf_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_pdf_id_fkey"
+            columns: ["pdf_id"]
+            isOneToOne: false
+            referencedRelation: "pdfs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pdfs: {
+        Row: {
+          created_at: string | null
+          filename: string
+          id: string
+          total_pages: number
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          filename: string
+          id?: string
+          total_pages: number
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          filename?: string
+          id?: string
+          total_pages?: number
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
