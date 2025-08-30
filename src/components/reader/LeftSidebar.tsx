@@ -94,7 +94,7 @@ export const LeftSidebar = ({
       </div>
 
       {/* Tool Buttons */}
-      <div className="flex-1 p-4 space-y-4 overflow-hidden">
+      <ScrollArea className="flex-1 p-4 space-y-4">
         <TooltipProvider>
           {/* Drawing Tools - Only show on bigger screens */}
           {!isMobile && (
@@ -201,7 +201,7 @@ export const LeftSidebar = ({
             </Tooltip>
           </div>
         </TooltipProvider>
-      </div>
+      </ScrollArea>
 
       {/* AI Assistant - Featured */}
       <div className="p-4 border-t border-border">

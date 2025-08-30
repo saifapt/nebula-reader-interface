@@ -103,120 +103,29 @@ export const RightSidebar = ({ isOpen, onClose, onToggle, isMobile, isDarkMode, 
       </div>
 
       {/* Chat placeholder */}
-      <div className="flex-1 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-primary/20 flex items-center justify-center">
-            <Bot className="h-8 w-8 text-primary" />
+      <ScrollArea className="flex-1 p-4">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-primary/20 flex items-center justify-center">
+              <Bot className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">AI Reading Assistant</h3>
+            <p className="text-muted-foreground mb-4 max-w-sm">
+              Ask questions about the document, get summaries, or request explanations.
+            </p>
+            <Button className="bg-gradient-primary hover:opacity-90 glow-primary">
+              Start Conversation
+            </Button>
           </div>
-          <h3 className="text-lg font-semibold mb-2">AI Reading Assistant</h3>
-          <p className="text-muted-foreground mb-4 max-w-sm">
-            Ask questions about the document, get summaries, or request explanations.
-          </p>
-          <Button className="bg-gradient-primary hover:opacity-90 glow-primary">
-            Start Conversation
-          </Button>
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 
-  // Mobile: Navigation Content
-  const navigationContent = (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        <h2 className="font-semibold text-lg">Menu</h2>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
-
-      {/* Navigation Items */}
-      <div className="flex-1 p-4 space-y-3">
-        {/* Bookmarks Section */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">Bookmarks</h3>
-          <div className="space-y-2">
-            {mockBookmarks.slice(0, 3).map((bookmark) => (
-              <Button
-                key={bookmark.id}
-                variant="outline"
-                className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
-              >
-                <Bookmark className="h-4 w-4" />
-                <div className="flex-1 text-left">
-                  <div className="text-sm">{bookmark.title}</div>
-                  <div className="text-xs text-muted-foreground">Page {bookmark.page}</div>
-                </div>
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Notes Section */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">Recent Notes</h3>
-          <div className="space-y-2">
-            {mockNotes.slice(0, 2).map((note) => (
-              <Button
-                key={note.id}
-                variant="outline"
-                className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
-              >
-                <FileText className="h-4 w-4" />
-                <div className="flex-1 text-left">
-                  <div className="text-sm">{note.title}</div>
-                  <div className="text-xs text-muted-foreground">Page {note.page}</div>
-                </div>
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Settings */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">Settings</h3>
-          <Button
-            variant="outline"
-            onClick={onToggleDarkMode}
-            className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
-          >
-            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {isDarkMode ? "Light Mode" : "Dark Mode"}
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
-          >
-            <Settings className="h-4 w-4" />
-            Preferences
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+  // Mobile: No mobile navigation content - removed as requested
 
   if (isMobile) {
-    return (
-      <>
-        {/* Mobile Overlay */}
-        {isOpen && (
-          <div
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
-            onClick={onClose}
-          />
-        )}
-        
-        {/* Mobile Drawer */}
-        <div
-          className={`fixed right-0 top-16 bottom-0 w-80 bg-surface-dark border-l border-border transform transition-transform duration-300 z-50 ${
-            isOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-        >
-          {navigationContent}
-        </div>
-      </>
-    );
+    return null; // No mobile right sidebar as requested
   }
 
   return (

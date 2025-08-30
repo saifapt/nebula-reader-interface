@@ -21,6 +21,10 @@ export const ReadingInterface = () => {
   const totalPages = 200;
   const isMobile = useIsMobile();
 
+  // Check if we're in medium screen mode (tablets in portrait, phones in landscape)
+  // where only one sidebar should be open at a time
+  const isMediumScreen = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1200;
+
   // Auto-close sidebars on mobile, keep open on desktop
   useEffect(() => {
     if (isMobile) {
@@ -31,6 +35,16 @@ export const ReadingInterface = () => {
       setRightSidebarOpen(true);
     }
   }, [isMobile]);
+
+  // Auto-close opposite sidebar on medium screens when one opens
+  useEffect(() => {
+    if (isMediumScreen) {
+      if (leftSidebarOpen && rightSidebarOpen) {
+        // If both are open, close the right one
+        setRightSidebarOpen(false);
+      }
+    }
+  }, [leftSidebarOpen, rightSidebarOpen, isMediumScreen]);
 
   // Force PDF mode on mobile
   useEffect(() => {
@@ -72,8 +86,18 @@ export const ReadingInterface = () => {
       <Header
         isFlipbookMode={isFlipbookMode}
         onToggleMode={handleToggleMode}
-        onToggleLeftSidebar={() => setLeftSidebarOpen(!leftSidebarOpen)}
-        onToggleRightSidebar={() => setRightSidebarOpen(!rightSidebarOpen)}
+        onToggleLeftSidebar={() => {
+          if (isMediumScreen && rightSidebarOpen) {
+            setRightSidebarOpen(false);
+          }
+          setLeftSidebarOpen(!leftSidebarOpen);
+        }}
+        onToggleRightSidebar={() => {
+          if (isMediumScreen && leftSidebarOpen) {
+            setLeftSidebarOpen(false);
+          }
+          setRightSidebarOpen(!rightSidebarOpen);
+        }}
         isMobile={isMobile}
       />
 

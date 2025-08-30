@@ -90,17 +90,6 @@ export const Header = ({
 
       {/* Right Section */}
       <div className="flex items-center gap-2">
-        {isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleRightSidebar}
-            className="hover-glow"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        )}
-
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
