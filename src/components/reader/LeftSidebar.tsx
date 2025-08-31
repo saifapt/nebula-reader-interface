@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Bookmark,
   StickyNote,
@@ -18,6 +19,7 @@ import {
   Clock,
   Hash,
   ChevronRight,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,15 +30,12 @@ import {
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
+import { useBookmarks } from "@/hooks/useBookmarks";
+import { useNotes } from "@/hooks/useNotes";
+import { SearchInterface } from "./SearchInterface";
 
-interface LeftSidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onToggle?: () => void;
-  isMobile: boolean;
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
-}
 
 const drawingTools = [
   { icon: PenTool, label: "Pen", id: "pen" },
@@ -50,19 +49,16 @@ const drawingTools = [
   { icon: Settings, label: "Tool Settings", id: "tool-settings" },
 ];
 
-// Mock data for bookmarks and notes
-const mockBookmarks = [
-  { id: 1, page: 15, title: "Chapter 3: Introduction", timestamp: "2 hours ago" },
-  { id: 2, page: 42, title: "Key Concepts", timestamp: "1 day ago" },
-  { id: 3, page: 87, title: "Case Study Analysis", timestamp: "3 days ago" },
-  { id: 4, page: 120, title: "Important Formula", timestamp: "5 days ago" },
-];
-
-const mockNotes = [
-  { id: 1, page: 23, title: "Important Formula", content: "E = mc²", timestamp: "1 hour ago" },
-  { id: 2, page: 35, title: "Discussion Question", content: "How does this relate...", timestamp: "4 hours ago" },
-  { id: 3, page: 56, title: "Key Insight", content: "The author's perspective...", timestamp: "1 day ago" },
-];
+interface LeftSidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onToggle?: () => void;
+  isMobile: boolean;
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
+  currentPdfId?: string;
+  onGoToPage?: (pdfId: string, pageNumber: number) => void;
+}
 
 export const LeftSidebar = ({
   isOpen,
@@ -71,10 +67,33 @@ export const LeftSidebar = ({
   isMobile,
   isDarkMode,
   onToggleDarkMode,
+  currentPdfId,
+  onGoToPage,
 }: LeftSidebarProps) => {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("tools");
+  const { bookmarks } = useBookmarks(currentPdfId);
+  const { notes } = useNotes(currentPdfId);
   const handleToolClick = (toolId: string) => {
     console.log(`Tool clicked: ${toolId}`);
-    // Placeholder for tool functionality
+  };
+
+  const handleGoToPage = (pdfId: string, pageNumber: number) => {
+    if (onGoToPage) {
+      onGoToPage(pdfId, pageNumber);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
   };
 
   const sidebarContent = (
@@ -93,115 +112,142 @@ export const LeftSidebar = ({
         )}
       </div>
 
-      {/* Tool Buttons */}
-      <ScrollArea className="flex-1 p-4 space-y-4">
-        <TooltipProvider>
-          {/* Drawing Tools - Only show on bigger screens */}
-          {!isMobile && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                Drawing Tools
-              </h3>
-              <div className="grid grid-cols-3 gap-2">
-                {drawingTools.map((tool) => (
-                  <Tooltip key={tool.id}>
+      {/* Content */}
+      <div className="flex-1 p-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-3 bg-surface-light mb-4">
+            <TabsTrigger value="tools" className="data-[state=active]:bg-primary">Tools</TabsTrigger>
+            <TabsTrigger value="saved" className="data-[state=active]:bg-primary">Saved</TabsTrigger>
+            <TabsTrigger value="search" className="data-[state=active]:bg-primary">Search</TabsTrigger>
+          </TabsList>
+
+          <div className="flex-1 min-h-0">
+            <TabsContent value="tools" className="h-full mt-0">
+              <TooltipProvider>
+                {!isMobile && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                      Drawing Tools
+                    </h3>
+                    <div className="grid grid-cols-3 gap-2">
+                      {drawingTools.map((tool) => (
+                        <Tooltip key={tool.id}>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToolClick(tool.id)}
+                              className="hover-glow flex flex-col items-center gap-1 h-auto py-3 bg-surface-dark border-border"
+                            >
+                              <tool.icon className="h-4 w-4" />
+                              <span className="text-xs">{tool.label.split(' ')[0]}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="bg-surface-dark border-border">
+                            {tool.label}
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2 mt-4">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                    Settings
+                  </h3>
+                  <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="outline"
-                        size="sm"
-                        onClick={() => handleToolClick(tool.id)}
-                        className="hover-glow flex flex-col items-center gap-1 h-auto py-3 bg-surface-dark border-border"
+                        onClick={onToggleDarkMode}
+                        className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
                       >
-                        <tool.icon className="h-4 w-4" />
-                        <span className="text-xs">{tool.label.split(' ')[0]}</span>
+                        {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                        {isDarkMode ? "Light Mode" : "Dark Mode"}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="bg-surface-dark border-border">
-                      {tool.label}
+                      Toggle theme
                     </TooltipContent>
                   </Tooltip>
-                ))}
-              </div>
-            </div>
-          )}
+                </div>
+              </TooltipProvider>
+            </TabsContent>
 
-          {/* Saved Bookmarks */}
-          <div className="space-y-2 flex-1 min-h-0">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Saved Bookmarks
-            </h3>
-            <ScrollArea className="h-32">
-              <div className="space-y-2">
-                {mockBookmarks.map((bookmark) => (
-                  <Button
-                    key={bookmark.id}
-                    variant="outline"
-                    onClick={() => handleToolClick(`bookmark-${bookmark.id}`)}
-                    className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border h-auto py-2"
-                  >
-                    <Bookmark className="h-4 w-4 text-primary" />
-                    <div className="flex-1 text-left">
-                      <div className="text-sm truncate">{bookmark.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Page {bookmark.page} • {bookmark.timestamp}
-                      </div>
+            <TabsContent value="saved" className="h-full mt-0">
+              <ScrollArea className="h-full">
+                <div className="space-y-4">
+                  {/* Bookmarks */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                      Bookmarks ({bookmarks.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {bookmarks.length > 0 ? bookmarks.map((bookmark) => (
+                        <Button
+                          key={bookmark.id}
+                          variant="outline"
+                          onClick={() => handleGoToPage(bookmark.pdf_id, bookmark.page_number)}
+                          className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border h-auto py-2"
+                        >
+                          <Bookmark className="h-4 w-4 text-primary" />
+                          <div className="flex-1 text-left">
+                            <div className="text-sm">Page {bookmark.page_number}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatDate(bookmark.created_at)}
+                            </div>
+                          </div>
+                        </Button>
+                      )) : (
+                        <div className="text-center text-muted-foreground text-sm py-4">
+                          No bookmarks yet
+                        </div>
+                      )}
                     </div>
-                  </Button>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
+                  </div>
 
-          {/* Saved Notes */}
-          <div className="space-y-2 flex-1 min-h-0">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Saved Notes
-            </h3>
-            <ScrollArea className="h-32">
-              <div className="space-y-2">
-                {mockNotes.map((note) => (
-                  <Button
-                    key={note.id}
-                    variant="outline"
-                    onClick={() => handleToolClick(`note-${note.id}`)}
-                    className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border h-auto py-2"
-                  >
-                    <StickyNote className="h-4 w-4 text-secondary" />
-                    <div className="flex-1 text-left">
-                      <div className="text-sm truncate">{note.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Page {note.page} • {note.timestamp}
-                      </div>
+                  {/* Notes */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                      Notes ({notes.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {notes.length > 0 ? notes.map((note) => (
+                        <Button
+                          key={note.id}
+                          variant="outline"
+                          onClick={() => handleGoToPage(note.pdf_id, note.page_number)}
+                          className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border h-auto py-2"
+                        >
+                          <StickyNote className="h-4 w-4 text-secondary" />
+                          <div className="flex-1 text-left">
+                            <div className="text-sm truncate">{note.note_text.substring(0, 30)}...</div>
+                            <div className="text-xs text-muted-foreground">
+                              Page {note.page_number} • {formatDate(note.created_at)}
+                            </div>
+                          </div>
+                        </Button>
+                      )) : (
+                        <div className="text-center text-muted-foreground text-sm py-4">
+                          No notes yet
+                        </div>
+                      )}
                     </div>
-                  </Button>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
+                  </div>
+                </div>
+              </ScrollArea>
+            </TabsContent>
 
-          {/* Settings */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              Settings
-            </h3>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  onClick={onToggleDarkMode}
-                  className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border"
-                >
-                  {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                  {isDarkMode ? "Light Mode" : "Dark Mode"}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="bg-surface-dark border-border">
-                Toggle theme
-              </TooltipContent>
-            </Tooltip>
+            <TabsContent value="search" className="h-full mt-0">
+              <SearchInterface 
+                onResultClick={handleGoToPage}
+                className="h-full"
+              />
+            </TabsContent>
           </div>
-        </TooltipProvider>
-      </ScrollArea>
+        </Tabs>
+      </div>
 
       {/* AI Assistant - Featured */}
       <div className="p-4 border-t border-border">

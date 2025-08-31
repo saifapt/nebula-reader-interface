@@ -18,22 +18,28 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          label: string | null
           page_number: number
           pdf_id: string | null
+          search_vector: unknown | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
+          label?: string | null
           page_number: number
           pdf_id?: string | null
+          search_vector?: unknown | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
+          label?: string | null
           page_number?: number
           pdf_id?: string | null
+          search_vector?: unknown | null
           user_id?: string | null
         }
         Relationships: [
@@ -53,7 +59,9 @@ export type Database = {
           id: string
           page_number: number
           pdf_id: string | null
+          updated_at: string | null
           user_id: string | null
+          version: number | null
         }
         Insert: {
           created_at?: string | null
@@ -61,7 +69,9 @@ export type Database = {
           id?: string
           page_number: number
           pdf_id?: string | null
+          updated_at?: string | null
           user_id?: string | null
+          version?: number | null
         }
         Update: {
           created_at?: string | null
@@ -69,7 +79,9 @@ export type Database = {
           id?: string
           page_number?: number
           pdf_id?: string | null
+          updated_at?: string | null
           user_id?: string | null
+          version?: number | null
         }
         Relationships: [
           {
@@ -83,27 +95,36 @@ export type Database = {
       }
       notes: {
         Row: {
+          coordinates: Json | null
           created_at: string | null
           id: string
           note_text: string
           page_number: number
           pdf_id: string | null
+          search_vector: unknown | null
+          tags: string[] | null
           user_id: string | null
         }
         Insert: {
+          coordinates?: Json | null
           created_at?: string | null
           id?: string
           note_text: string
           page_number: number
           pdf_id?: string | null
+          search_vector?: unknown | null
+          tags?: string[] | null
           user_id?: string | null
         }
         Update: {
+          coordinates?: Json | null
           created_at?: string | null
           id?: string
           note_text?: string
           page_number?: number
           pdf_id?: string | null
+          search_vector?: unknown | null
+          tags?: string[] | null
           user_id?: string | null
         }
         Relationships: [

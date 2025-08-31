@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/useAuth";
 import { Header } from "./Header";
 import { LeftSidebar } from "./LeftSidebar";
 import { RightSidebar } from "./RightSidebar";
@@ -8,8 +9,10 @@ import { MobileControls } from "./MobileControls";
 import { AIAssistant } from "./AIAssistant";
 import { FloatingToolsMenu } from "./FloatingToolsMenu";
 import { DraggableFloatingIcon } from "./DraggableFloatingIcon";
+import { toast } from "@/hooks/use-toast";
 
 export const ReadingInterface = () => {
+  const { user } = useAuth();
   const [isFlipbookMode, setIsFlipbookMode] = useState(true);
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
@@ -20,6 +23,13 @@ export const ReadingInterface = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 200;
   const isMobile = useIsMobile();
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!user) {
+      window.location.href = '/auth';
+    }
+  }, [user]);
 
   // Check if we're in medium screen mode (tablets in portrait, phones in landscape)
   // where only one sidebar should be open at a time
@@ -69,11 +79,11 @@ export const ReadingInterface = () => {
   };
 
   const handleBookmark = () => {
-    console.log(`Bookmarked page ${currentPage}`);
+    toast({ title: "Success", description: `Bookmarked page ${currentPage}` });
   };
 
   const handleAddNote = () => {
-    console.log(`Added note to page ${currentPage}`);
+    toast({ title: "Success", description: `Note added to page ${currentPage}` });
   };
 
   const handleZoom = (direction: 'in' | 'out') => {
@@ -122,6 +132,8 @@ export const ReadingInterface = () => {
             totalPages={totalPages}
             onPageChange={handlePageChange}
             onAIAssistantOpen={() => setIsAIAssistantOpen(true)}
+            onBookmark={handleBookmark}
+            onAddNote={handleAddNote}
           />
           
           {/* Mobile Controls Overlay */}
