@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText } from 'lucide-react';
 import { usePDFs } from '@/hooks/usePDFs';
+import { PDFUploadConfirmation } from './PDFUploadConfirmation';
 
 interface PDFUploadButtonProps {
   onPDFUploaded: (pdfData: any) => void;
@@ -11,8 +12,10 @@ interface PDFUploadButtonProps {
 export const PDFUploadButton = ({ onPDFUploaded, className }: PDFUploadButtonProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadPDF, loading } = usePDFs();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -20,12 +23,29 @@ export const PDFUploadButton = ({ onPDFUploaded, className }: PDFUploadButtonPro
       return;
     }
 
-    const result = await uploadPDF(file);
+    setSelectedFile(file);
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!selectedFile) return;
+
+    const result = await uploadPDF(selectedFile);
     if (result) {
-      onPDFUploaded({ ...result, file });
+      onPDFUploaded({ ...result, file: selectedFile });
     }
 
-    // Reset input
+    // Reset input and state
+    setSelectedFile(null);
+    setShowConfirmation(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCancelUpload = () => {
+    setSelectedFile(null);
+    setShowConfirmation(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -62,6 +82,14 @@ export const PDFUploadButton = ({ onPDFUploaded, className }: PDFUploadButtonPro
           </>
         )}
       </Button>
+
+      <PDFUploadConfirmation
+        isOpen={showConfirmation}
+        onClose={handleCancelUpload}
+        onConfirm={handleConfirmUpload}
+        fileName={selectedFile?.name || ''}
+        isUploading={loading}
+      />
     </>
   );
 };

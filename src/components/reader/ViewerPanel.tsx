@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, FileText, RotateCw, Download, Share, Bot } from "lucide-react";
+import { BookOpen, FileText, RotateCw, Download, Share, Bot, Bookmark, StickyNote } from "lucide-react";
 import { PDFViewer, DrawingTool } from "@/lib/pdf-integration";
 import { PDFUploadButton } from "./PDFUploadButton";
 import { DrawingToolbar } from "./DrawingToolbar";
@@ -114,19 +114,19 @@ export const ViewerPanel = ({
   const displayTotalPages = pdfLoaded ? actualTotalPages : totalPages;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Viewer Container */}
-      <div className="flex-1 p-6 flex items-center justify-center">
-        <div className="relative w-full h-full max-w-4xl max-h-full">
+      <div className="flex-1 p-3 sm:p-6 flex items-center justify-center min-h-0">
+        <div className="relative w-full h-full max-w-4xl max-h-full min-h-0">
           {/* PDF Viewer Container */}
-          <div className="w-full h-full rounded-xl border-2 border-border bg-surface-dark shadow-elevated animated-border overflow-hidden relative">
+          <div className="w-full h-full rounded-xl border-2 border-border bg-surface-dark shadow-elevated animated-border overflow-hidden relative min-h-0">
             {pdfLoaded ? (
               <>
                 {/* PDF Rendering Container */}
                 <div 
                   ref={containerRef} 
                   className="w-full h-full relative overflow-auto bg-white"
-                  style={{ minHeight: '600px' }}
+                  style={{ minHeight: '400px' }}
                 />
                 
                 {/* Drawing Toolbar */}
@@ -207,11 +207,35 @@ export const ViewerPanel = ({
               <Share className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Bookmark & Note Icons - Top Left */}
+          {pdfLoaded && (
+            <div className="absolute top-4 left-4 flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleBookmark}
+                className={`bg-surface-dark/80 backdrop-blur-sm border-border hover-glow ${
+                  isBookmarked(actualCurrentPage) ? 'bg-primary/20 text-primary' : ''
+                }`}
+              >
+                <Bookmark className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleAddNote}
+                className="bg-surface-dark/80 backdrop-blur-sm border-border hover-glow"
+              >
+                <StickyNote className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Page Information Bar */}
-      <div className="h-16 border-t border-border bg-surface-dark flex items-center justify-between px-6">
+      <div className="h-16 border-t border-border bg-surface-dark flex items-center justify-between px-6 flex-shrink-0">
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="bg-surface-light border-border">
               {isFlipbookMode ? "Flipbook Mode" : "PDF Mode"}

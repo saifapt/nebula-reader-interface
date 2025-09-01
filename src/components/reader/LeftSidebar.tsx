@@ -117,8 +117,8 @@ export const LeftSidebar = ({
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-3 bg-surface-light mb-4">
             <TabsTrigger value="tools" className="data-[state=active]:bg-primary">Tools</TabsTrigger>
-            <TabsTrigger value="saved" className="data-[state=active]:bg-primary">Saved</TabsTrigger>
-            <TabsTrigger value="search" className="data-[state=active]:bg-primary">Search</TabsTrigger>
+            <TabsTrigger value="notes" className="data-[state=active]:bg-primary">Notes</TabsTrigger>
+            <TabsTrigger value="bookmarks" className="data-[state=active]:bg-primary">Bookmarks</TabsTrigger>
           </TabsList>
 
           <div className="flex-1 min-h-0">
@@ -175,65 +175,83 @@ export const LeftSidebar = ({
               </TooltipProvider>
             </TabsContent>
 
-            <TabsContent value="saved" className="h-full mt-0">
+            <TabsContent value="notes" className="h-full mt-0">
               <ScrollArea className="h-full">
-                <div className="space-y-4">
-                  {/* Bookmarks */}
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                      Bookmarks ({bookmarks.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {bookmarks.length > 0 ? bookmarks.map((bookmark) => (
-                        <Button
-                          key={bookmark.id}
-                          variant="outline"
-                          onClick={() => handleGoToPage(bookmark.pdf_id, bookmark.page_number)}
-                          className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border h-auto py-2"
-                        >
-                          <Bookmark className="h-4 w-4 text-primary" />
-                          <div className="flex-1 text-left">
-                            <div className="text-sm">Page {bookmark.page_number}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatDate(bookmark.created_at)}
-                            </div>
-                          </div>
-                        </Button>
-                      )) : (
-                        <div className="text-center text-muted-foreground text-sm py-4">
-                          No bookmarks yet
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Notes */}
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                <div className="space-y-3">
+                  {/* Search Notes Header */}
+                  <div className="flex items-center gap-2 pb-2 border-b border-border">
+                    <h3 className="text-sm font-medium text-muted-foreground flex-1">
                       Notes ({notes.length})
                     </h3>
-                    <div className="space-y-2">
-                      {notes.length > 0 ? notes.map((note) => (
-                        <Button
-                          key={note.id}
-                          variant="outline"
-                          onClick={() => handleGoToPage(note.pdf_id, note.page_number)}
-                          className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border h-auto py-2"
-                        >
-                          <StickyNote className="h-4 w-4 text-secondary" />
-                          <div className="flex-1 text-left">
-                            <div className="text-sm truncate">{note.note_text.substring(0, 30)}...</div>
-                            <div className="text-xs text-muted-foreground">
-                              Page {note.page_number} • {formatDate(note.created_at)}
-                            </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => setActiveTab("search")}
+                    >
+                      <Search className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  
+                  {/* Notes List */}
+                  <div className="space-y-2">
+                    {notes.length > 0 ? notes.map((note) => (
+                      <Button
+                        key={note.id}
+                        variant="outline"
+                        onClick={() => handleGoToPage(note.pdf_id, note.page_number)}
+                        className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border h-auto py-2"
+                      >
+                        <StickyNote className="h-4 w-4 text-secondary" />
+                        <div className="flex-1 text-left">
+                          <div className="text-sm truncate">{note.note_text.substring(0, 30)}...</div>
+                          <div className="text-xs text-muted-foreground">
+                            Page {note.page_number} • {formatDate(note.created_at)}
                           </div>
-                        </Button>
-                      )) : (
-                        <div className="text-center text-muted-foreground text-sm py-4">
-                          No notes yet
                         </div>
-                      )}
-                    </div>
+                      </Button>
+                    )) : (
+                      <div className="text-center text-muted-foreground text-sm py-4">
+                        No notes yet
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="bookmarks" className="h-full mt-0">
+              <ScrollArea className="h-full">
+                <div className="space-y-3">
+                  {/* Bookmarks Header */}
+                  <div className="pb-2 border-b border-border">
+                    <h3 className="text-sm font-medium text-muted-foreground">
+                      Bookmarks ({bookmarks.length})
+                    </h3>
+                  </div>
+                  
+                  {/* Bookmarks List */}
+                  <div className="space-y-2">
+                    {bookmarks.length > 0 ? bookmarks.map((bookmark) => (
+                      <Button
+                        key={bookmark.id}
+                        variant="outline"
+                        onClick={() => handleGoToPage(bookmark.pdf_id, bookmark.page_number)}
+                        className="w-full justify-start gap-3 hover-glow bg-surface-dark border-border h-auto py-2"
+                      >
+                        <Bookmark className="h-4 w-4 text-primary" />
+                        <div className="flex-1 text-left">
+                          <div className="text-sm">Page {bookmark.page_number}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatDate(bookmark.created_at)}
+                          </div>
+                        </div>
+                      </Button>
+                    )) : (
+                      <div className="text-center text-muted-foreground text-sm py-4">
+                        No bookmarks yet
+                      </div>
+                    )}
                   </div>
                 </div>
               </ScrollArea>

@@ -16,6 +16,7 @@ export const ReadingInterface = () => {
   const [isFlipbookMode, setIsFlipbookMode] = useState(true);
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [currentPdfId, setCurrentPdfId] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
   const [isFloatingMenuVisible, setIsFloatingMenuVisible] = useState(false);
@@ -121,6 +122,11 @@ export const ReadingInterface = () => {
           isMobile={isMobile}
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+          currentPdfId={currentPdfId || undefined}
+          onGoToPage={(pdfId, pageNumber) => {
+            setCurrentPage(pageNumber);
+            handlePageChange(pageNumber);
+          }}
         />
 
         {/* Center Viewer Panel */}
@@ -134,6 +140,7 @@ export const ReadingInterface = () => {
             onAIAssistantOpen={() => setIsAIAssistantOpen(true)}
             onBookmark={handleBookmark}
             onAddNote={handleAddNote}
+            onPdfIdChange={setCurrentPdfId}
           />
           
           {/* Mobile Controls Overlay */}
