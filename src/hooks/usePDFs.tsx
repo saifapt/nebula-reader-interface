@@ -25,11 +25,11 @@ export const usePDFs = () => {
     try {
       // Upload file to storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const storagePath = `${user.id}/${file.name}`;
       
       const { error: uploadError } = await supabase.storage
         .from('pdfs')
-        .upload(fileName, file);
+        .upload(storagePath, file, { contentType: 'application/pdf', upsert: false });
 
       if (uploadError) throw uploadError;
 

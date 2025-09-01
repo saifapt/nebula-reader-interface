@@ -41,7 +41,7 @@ export class PDFViewer {
     this.setupPeriodicSave();
   }
 
-  async loadPDF(file: File | string): Promise<void> {
+  async loadPDF(file: File | string, pdfId?: string): Promise<void> {
     try {
       let loadingTask;
       
@@ -49,11 +49,10 @@ export class PDFViewer {
         // Load from URL (existing PDF)
         loadingTask = pdfjsLib.getDocument(file);
       } else {
-        // Upload new PDF first
-        const uploadResult = await this.uploadPDF(file);
-        if (!uploadResult) throw new Error('Failed to upload PDF');
-        
-        this.pdfId = uploadResult.pdfId;
+        // Load from local file without uploading (upload handled elsewhere)
+        if (pdfId) {
+          this.pdfId = pdfId;
+        }
         loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
       }
 
@@ -289,14 +288,17 @@ export class PDFViewer {
     if (!this.pdfId) return;
 
     try {
-      const { data, error } = await supabase.functions.invoke('drawings', {
-        body: null
-      });
+      const { data, error } = await supabase
+        .from('drawings')
+        .select('drawing_data')
+        .eq('pdf_id', this.pdfId)
+        .eq('page_number', pageNumber)
+        .maybeSingle();
 
       if (error) throw error;
       
-      if (data?.drawingData) {
-        canvas.loadFromJSON(data.drawingData, () => {
+      if (data?.drawing_data) {
+        canvas.loadFromJSON(data.drawing_data as any, () => {
           canvas.renderAll();
         });
       }

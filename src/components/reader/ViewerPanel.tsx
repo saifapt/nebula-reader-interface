@@ -19,6 +19,8 @@ interface ViewerPanelProps {
   onAIAssistantOpen: () => void;
   onBookmark?: () => void;
   onAddNote?: () => void;
+  externalPage?: number | null;
+  onPdfIdChange?: (pdfId: string | null) => void;
 }
 
 export const ViewerPanel = ({ 
@@ -29,7 +31,9 @@ export const ViewerPanel = ({
   onPageChange,
   onAIAssistantOpen,
   onBookmark,
-  onAddNote
+  onAddNote,
+  externalPage,
+  onPdfIdChange,
 }: ViewerPanelProps) => {
   const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,14 +66,14 @@ export const ViewerPanel = ({
 
   const handlePDFUploaded = async (pdfData: any) => {
     if (pdfViewerRef.current && pdfData.file) {
-      await pdfViewerRef.current.loadPDF(pdfData.file);
+      await pdfViewerRef.current.loadPDF(pdfData.file, pdfData.id);
       setPdfLoaded(true);
       setCurrentPdfId(pdfData.id);
+      onPdfIdChange?.(pdfData.id);
       setActualCurrentPage(1);
       setActualTotalPages(pdfViewerRef.current.getTotalPages());
     }
   };
-
   const handlePageChange = async (page: number) => {
     if (pdfViewerRef.current) {
       await pdfViewerRef.current.goToPage(page);
