@@ -46,13 +46,19 @@ export class PDFViewer {
       let loadingTask;
       
       if (typeof file === 'string') {
-        // Load from URL (existing PDF)
+        // Load from URL (signed URL from storage)
         loadingTask = pdfjsLib.getDocument(file);
-      } else {
-        // Load from local file without uploading (upload handled elsewhere)
-        if (pdfId) {
-          this.pdfId = pdfId;
+      } else if (pdfId) {
+        // Load from Supabase storage using PDF ID
+        this.pdfId = pdfId;
+        const signedUrl = await this.getSignedUrl(pdfId);
+        if (signedUrl) {
+          loadingTask = pdfjsLib.getDocument(signedUrl);
+        } else {
+          throw new Error('Failed to get signed URL for PDF');
         }
+      } else {
+        // Load from local file (for preview before upload)
         loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
       }
 
@@ -251,17 +257,29 @@ export class PDFViewer {
     this.currentPage = pageNumber;
   }
 
-  private async uploadPDF(file: File): Promise<any> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('filename', file.name);
+  private async getSignedUrl(pdfId: string): Promise<string | null> {
+    try {
+      // Get PDF metadata
+      const { data: pdfData, error: metaError } = await supabase
+        .from('pdfs')
+        .select('*')
+        .eq('id', pdfId)
+        .single();
 
-    const { data, error } = await supabase.functions.invoke('upload-pdf', {
-      body: formData
-    });
+      if (metaError || !pdfData) throw metaError;
 
-    if (error) throw error;
-    return data;
+      // Get signed URL for the PDF file
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from('pdfs')
+        .createSignedUrl(`${pdfData.uploaded_by}/${pdfData.filename}`, 60 * 60); // 1 hour expiry
+
+      if (urlError) throw urlError;
+      
+      return signedUrlData.signedUrl;
+    } catch (error) {
+      console.error('Error getting signed URL:', error);
+      return null;
+    }
   }
 
   private async saveDrawingToServer(pageNumber: number, canvas: FabricCanvas): Promise<void> {

@@ -65,8 +65,9 @@ export const ViewerPanel = ({
   }, []);
 
   const handlePDFUploaded = async (pdfData: any) => {
-    if (pdfViewerRef.current && pdfData.file) {
-      await pdfViewerRef.current.loadPDF(pdfData.file, pdfData.id);
+    if (pdfViewerRef.current && pdfData.id) {
+      // Load PDF from Supabase storage using PDF ID
+      await pdfViewerRef.current.loadPDF('', pdfData.id);
       setPdfLoaded(true);
       setCurrentPdfId(pdfData.id);
       onPdfIdChange?.(pdfData.id);
@@ -191,7 +192,7 @@ export const ViewerPanel = ({
           </div>
 
           {/* Viewer Controls Overlay */}
-          <div className="absolute top-4 right-4 flex gap-2">
+          <div className="absolute top-4 right-4 flex gap-2 z-30">
             <Button
               variant="outline"
               size="icon"
@@ -209,36 +210,36 @@ export const ViewerPanel = ({
           </div>
 
           {/* Bookmark & Note Icons - Top Left */}
-          {pdfLoaded && (
-            <div className="absolute top-4 left-4 flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleBookmark}
-                className={`bg-surface-dark/80 backdrop-blur-sm border-border hover-glow ${
-                  isBookmarked(actualCurrentPage) ? 'bg-primary/20 text-primary' : ''
-                }`}
-              >
-                <Bookmark className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleAddNote}
-                className="bg-surface-dark/80 backdrop-blur-sm border-border hover-glow"
-              >
-                <StickyNote className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+          <div className="absolute top-4 left-4 flex gap-2 z-30">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleBookmark}
+              disabled={!pdfLoaded}
+              className={`bg-surface-dark/80 backdrop-blur-sm border-border hover-glow ${
+                pdfLoaded && isBookmarked(actualCurrentPage) ? 'bg-primary/20 text-primary' : ''
+              }`}
+            >
+              <Bookmark className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleAddNote}
+              disabled={!pdfLoaded}
+              className="bg-surface-dark/80 backdrop-blur-sm border-border hover-glow"
+            >
+              <StickyNote className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Page Information Bar */}
-      <div className="h-16 border-t border-border bg-surface-dark flex items-center justify-between px-6 flex-shrink-0">
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="bg-surface-light border-border">
-              {isFlipbookMode ? "Flipbook Mode" : "PDF Mode"}
+      <div className="h-12 sm:h-16 border-t border-border bg-surface-dark flex items-center justify-between px-2 sm:px-6 flex-shrink-0 overflow-hidden">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+            <Badge variant="outline" className="bg-surface-light border-border text-xs sm:text-sm flex-shrink-0">
+              {isFlipbookMode ? "Flipbook" : "PDF"}
             </Badge>
             {!isMobile && pdfLoaded && (
               <div className="flex items-center gap-2">
@@ -268,7 +269,7 @@ export const ViewerPanel = ({
           </div>
 
         {/* Desktop Navigation & Mobile AI Assistant */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           {!isMobile ? (
             // Desktop: Page Navigation
             <>
@@ -277,17 +278,18 @@ export const ViewerPanel = ({
                 size="sm"
                 onClick={() => handlePageChange(displayCurrentPage - 1)}
                 disabled={displayCurrentPage === 1}
-                className="bg-surface-light border-border hover-glow"
+                className="bg-surface-light border-border hover-glow text-xs sm:text-sm px-2 sm:px-4"
               >
-                Previous
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">←</span>
               </Button>
               
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Page</span>
-                <Badge variant="secondary" className="bg-primary text-primary-foreground">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <span className="text-xs sm:text-sm font-medium hidden sm:inline">Page</span>
+                <Badge variant="secondary" className="bg-primary text-primary-foreground text-xs sm:text-sm">
                   {displayCurrentPage}
                 </Badge>
-                <span className="text-sm text-muted-foreground">of {displayTotalPages}</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">of {displayTotalPages}</span>
               </div>
               
               <Button
@@ -295,9 +297,10 @@ export const ViewerPanel = ({
                 size="sm"
                 onClick={() => handlePageChange(displayCurrentPage + 1)}
                 disabled={displayCurrentPage === displayTotalPages}
-                className="bg-surface-light border-border hover-glow"
+                className="bg-surface-light border-border hover-glow text-xs sm:text-sm px-2 sm:px-4"
               >
-                Next
+                <span className="hidden sm:inline">Next</span>
+                <span className="sm:hidden">→</span>
               </Button>
             </>
           ) : (

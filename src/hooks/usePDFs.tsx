@@ -33,8 +33,20 @@ export const usePDFs = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get PDF page count (simplified - in real app you'd use PDF.js)
-      const totalPages = 1; // This would be calculated from the actual PDF
+      // Get PDF page count using PDF.js
+      let totalPages = 1;
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = await import('pdfjs-dist').then(pdfjsLib => {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+          return pdfjsLib.getDocument(arrayBuffer);
+        });
+        const pdfDoc = await loadingTask.promise;
+        totalPages = pdfDoc.numPages;
+      } catch (pdfError) {
+        console.warn('Could not get PDF page count:', pdfError);
+        // Default to 1 page if unable to read
+      }
 
       // Save PDF metadata to database
       const { data: pdfData, error: dbError } = await supabase

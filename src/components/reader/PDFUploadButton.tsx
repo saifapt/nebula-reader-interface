@@ -32,7 +32,8 @@ export const PDFUploadButton = ({ onPDFUploaded, className }: PDFUploadButtonPro
 
     const result = await uploadPDF(selectedFile);
     if (result) {
-      onPDFUploaded({ ...result, file: selectedFile });
+      // Pass only the PDF metadata, not the file object
+      onPDFUploaded(result);
     }
 
     // Reset input and state

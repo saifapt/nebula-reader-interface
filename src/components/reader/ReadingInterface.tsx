@@ -130,7 +130,7 @@ export const ReadingInterface = () => {
         />
 
         {/* Center Viewer Panel */}
-        <div className="flex-1 flex flex-col min-w-0 relative">
+        <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
           <ViewerPanel 
             isFlipbookMode={isFlipbookMode} 
             isMobile={isMobile}

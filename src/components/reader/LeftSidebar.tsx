@@ -97,7 +97,7 @@ export const LeftSidebar = ({
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
         <h2 className="font-semibold text-lg">Tools</h2>
@@ -113,7 +113,7 @@ export const LeftSidebar = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-4">
+      <div className="flex-1 p-4 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-3 bg-surface-light mb-4">
             <TabsTrigger value="tools" className="data-[state=active]:bg-primary">Tools</TabsTrigger>
@@ -316,7 +316,7 @@ export const LeftSidebar = ({
     <div
       className={`border-r border-border surface-gradient transition-all duration-300 ${
         isOpen ? "w-64" : "w-12"
-      } overflow-hidden`}
+      } overflow-hidden flex flex-col`}
     >
       {isOpen ? sidebarContent : (
         // Collapsed state - mini sidebar with icons
