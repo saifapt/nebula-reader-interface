@@ -65,14 +65,22 @@ export const ViewerPanel = ({
   }, []);
 
   const handlePDFUploaded = async (pdfData: any) => {
+    console.log('PDF uploaded, data received:', pdfData);
     if (pdfViewerRef.current && pdfData.id) {
-      // Load PDF from Supabase storage using PDF ID
-      await pdfViewerRef.current.loadPDF('', pdfData.id);
-      setPdfLoaded(true);
-      setCurrentPdfId(pdfData.id);
-      onPdfIdChange?.(pdfData.id);
-      setActualCurrentPage(1);
-      setActualTotalPages(pdfViewerRef.current.getTotalPages());
+      try {
+        console.log('Loading PDF with ID:', pdfData.id);
+        // Load PDF from Supabase storage using PDF ID
+        await pdfViewerRef.current.loadPDF('', pdfData.id);
+        setPdfLoaded(true);
+        setCurrentPdfId(pdfData.id);
+        onPdfIdChange?.(pdfData.id);
+        setActualCurrentPage(1);
+        setActualTotalPages(pdfViewerRef.current.getTotalPages());
+        console.log('PDF loaded successfully, total pages:', pdfViewerRef.current.getTotalPages());
+      } catch (error) {
+        console.error('Error loading PDF in viewer:', error);
+        toast({ title: "Error", description: "Failed to display PDF", variant: "destructive" });
+      }
     }
   };
   const handlePageChange = async (page: number) => {
@@ -144,48 +152,50 @@ export const ViewerPanel = ({
               </>
             ) : (
               /* Upload Placeholder */
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-dark to-surface-darker">
-                <div className="text-center">
-                  <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-primary flex items-center justify-center glow-primary">
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-dark to-surface-darker relative">
+                <div className="text-center p-4 max-w-md">
+                  <div className="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 mx-auto mb-4 sm:mb-6 rounded-full bg-gradient-primary flex items-center justify-center glow-primary">
                     {isFlipbookMode ? (
-                      <BookOpen className="h-12 w-12 text-primary-foreground" />
+                      <BookOpen className="h-8 sm:h-10 md:h-12 w-8 sm:w-10 md:w-12 text-primary-foreground" />
                     ) : (
-                      <FileText className="h-12 w-12 text-primary-foreground" />
+                      <FileText className="h-8 sm:h-10 md:h-12 w-8 sm:w-10 md:w-12 text-primary-foreground" />
                     )}
                   </div>
                   
-                  <h3 className="text-xl font-semibold mb-2">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2">
                     {isFlipbookMode ? "Flipbook Viewer" : "PDF Viewer"}
                   </h3>
-                  <p className="text-muted-foreground mb-6 max-w-md">
+                  <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base px-2">
                     {isFlipbookMode
-                      ? "Interactive flipbook reading experience with page-turning animations"
-                      : "High-quality PDF document viewer with advanced reading features"}
+                      ? "Interactive flipbook reading experience"
+                      : "High-quality PDF document viewer"}
                   </p>
                   
                   {/* Mock Document Preview */}
-                  <div className="w-48 h-64 mx-auto bg-background/10 rounded-lg border border-border/50 flex items-center justify-center mb-6">
+                  <div className="w-32 sm:w-40 md:w-48 h-40 sm:h-52 md:h-64 mx-auto bg-background/10 rounded-lg border border-border/50 flex items-center justify-center mb-4 sm:mb-6">
                     <div className="text-center">
-                      <div className="w-16 h-20 mx-auto mb-3 bg-gradient-primary/20 rounded border border-primary/30"></div>
-                      <p className="text-sm text-muted-foreground">Document Preview</p>
+                      <div className="w-12 sm:w-14 md:w-16 h-16 sm:h-18 md:h-20 mx-auto mb-2 sm:mb-3 bg-gradient-primary/20 rounded border border-primary/30"></div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Document Preview</p>
                     </div>
                   </div>
 
-                  {user ? (
-                    <PDFUploadButton 
-                      onPDFUploaded={handlePDFUploaded}
-                      className="hover-glow bg-surface-light border-border"
-                    />
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="hover-glow bg-surface-light border-border"
-                      disabled
-                    >
-                      <RotateCw className="h-4 w-4 mr-2" />
-                      Please Login to Upload
-                    </Button>
-                  )}
+                  <div className="relative z-50">
+                    {user ? (
+                      <PDFUploadButton 
+                        onPDFUploaded={handlePDFUploaded}
+                        className="hover-glow bg-surface-light border-border text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3"
+                      />
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="hover-glow bg-surface-light border-border text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3"
+                        disabled
+                      >
+                        <RotateCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                        Please Login to Upload
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

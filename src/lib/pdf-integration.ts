@@ -66,6 +66,7 @@ export class PDFViewer {
       this.totalPages = this.pdfDocument.numPages;
       this.currentPage = 1;
       
+      console.log('PDF loaded successfully, total pages:', this.totalPages);
       await this.renderPage(1);
       toast({ title: "Success", description: "PDF loaded successfully" });
     } catch (error) {
@@ -96,6 +97,18 @@ export class PDFViewer {
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     
+    // Make canvas responsive
+    const containerRect = this.container.getBoundingClientRect();
+    const scaleX = containerRect.width / (viewport.width / window.devicePixelRatio);
+    const scaleY = containerRect.height / (viewport.height / window.devicePixelRatio);
+    const scale = Math.min(scaleX, scaleY, 1);
+    
+    canvas.style.width = `${(viewport.width / window.devicePixelRatio) * scale}px`;
+    canvas.style.height = `${(viewport.height / window.devicePixelRatio) * scale}px`;
+    canvas.style.transform = `translate(-50%, -50%) scale(1)`;
+    canvas.style.left = '50%';
+    canvas.style.top = '50%';
+    
     const context = canvas.getContext('2d')!;
     const renderContext = {
       canvasContext: context,
@@ -124,10 +137,23 @@ export class PDFViewer {
       this.container.appendChild(overlayCanvas);
     }
 
-    overlayCanvas.width = viewport.width / window.devicePixelRatio;
-    overlayCanvas.height = viewport.height / window.devicePixelRatio;
-    overlayCanvas.style.width = `${viewport.width / window.devicePixelRatio}px`;
-    overlayCanvas.style.height = `${viewport.height / window.devicePixelRatio}px`;
+    // Make overlay responsive and match PDF canvas
+    const pdfCanvas = this.container.querySelector(`canvas[data-page="${pageNumber}"]`) as HTMLCanvasElement;
+    if (pdfCanvas) {
+      const rect = pdfCanvas.getBoundingClientRect();
+      overlayCanvas.width = parseInt(pdfCanvas.style.width) || viewport.width / window.devicePixelRatio;
+      overlayCanvas.height = parseInt(pdfCanvas.style.height) || viewport.height / window.devicePixelRatio;
+      overlayCanvas.style.width = pdfCanvas.style.width;
+      overlayCanvas.style.height = pdfCanvas.style.height;
+      overlayCanvas.style.transform = pdfCanvas.style.transform;
+      overlayCanvas.style.left = pdfCanvas.style.left;
+      overlayCanvas.style.top = pdfCanvas.style.top;
+    } else {
+      overlayCanvas.width = viewport.width / window.devicePixelRatio;
+      overlayCanvas.height = viewport.height / window.devicePixelRatio;
+      overlayCanvas.style.width = `${viewport.width / window.devicePixelRatio}px`;
+      overlayCanvas.style.height = `${viewport.height / window.devicePixelRatio}px`;
+    }
 
     const fabricCanvas = new FabricCanvas(overlayCanvas, {
       isDrawingMode: this.isDrawingMode,
@@ -259,6 +285,8 @@ export class PDFViewer {
 
   private async getSignedUrl(pdfId: string): Promise<string | null> {
     try {
+      console.log('Getting signed URL for PDF ID:', pdfId);
+      
       // Get PDF metadata
       const { data: pdfData, error: metaError } = await supabase
         .from('pdfs')
@@ -266,15 +294,24 @@ export class PDFViewer {
         .eq('id', pdfId)
         .single();
 
-      if (metaError || !pdfData) throw metaError;
+      if (metaError || !pdfData) {
+        console.error('Error getting PDF metadata:', metaError);
+        throw metaError;
+      }
+
+      console.log('PDF metadata:', pdfData);
 
       // Get signed URL for the PDF file
       const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('pdfs')
         .createSignedUrl(`${pdfData.uploaded_by}/${pdfData.filename}`, 60 * 60); // 1 hour expiry
 
-      if (urlError) throw urlError;
+      if (urlError) {
+        console.error('Error getting signed URL:', urlError);
+        throw urlError;
+      }
       
+      console.log('Signed URL created successfully');
       return signedUrlData.signedUrl;
     } catch (error) {
       console.error('Error getting signed URL:', error);
