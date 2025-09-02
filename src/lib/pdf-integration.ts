@@ -39,35 +39,56 @@ export class PDFViewer {
   constructor(container: HTMLElement) {
     this.container = container;
     this.setupPeriodicSave();
+    // Re-render current page on resize to keep perfect fit
+    window.addEventListener('resize', this.handleResize);
   }
 
-  async loadPDF(file: File | string, pdfId?: string): Promise<void> {
+  private handleResize = debounce(() => {
+    if (!this.pdfDocument) return;
+    const pageNum = this.currentPage;
+    // Remove existing canvases for this page so dimensions are recalculated
+    const pageCanvas = this.container.querySelector(`canvas[data-page="${pageNum}"]`);
+    const overlayCanvas = this.container.querySelector(`#drawing-overlay-${pageNum}`);
+    if (pageCanvas) (pageCanvas as HTMLCanvasElement).remove();
+    if (overlayCanvas) (overlayCanvas as HTMLCanvasElement).remove();
+    this.pages.delete(pageNum);
+    this.renderPage(pageNum);
+  }, 150);
+
+  async loadPDF(file: File | string | null, pdfId?: string): Promise<void> {
     try {
+      // Clean up any previous document and canvases
+      this.pages.forEach((page) => page.drawingCanvas.dispose());
+      this.pages.clear();
+      this.container.innerHTML = '';
+
       let loadingTask;
-      
-      if (typeof file === 'string') {
-        // Load from URL (signed URL from storage)
-        loadingTask = pdfjsLib.getDocument(file);
-      } else if (pdfId) {
-        // Load from Supabase storage using PDF ID
+
+      // Prefer loading by pdfId when provided
+      if (pdfId) {
         this.pdfId = pdfId;
         const signedUrl = await this.getSignedUrl(pdfId);
-        if (signedUrl) {
-          loadingTask = pdfjsLib.getDocument(signedUrl);
-        } else {
-          throw new Error('Failed to get signed URL for PDF');
-        }
+        if (!signedUrl) throw new Error('Failed to get signed URL for PDF');
+        loadingTask = (pdfjsLib as any).getDocument(signedUrl);
+      } else if (typeof file === 'string' && file) {
+        // Load from a direct URL string
+        loadingTask = (pdfjsLib as any).getDocument(file);
+      } else if (file instanceof File) {
+        // Load from local file (preview before upload)
+        const url = URL.createObjectURL(file);
+        loadingTask = (pdfjsLib as any).getDocument(url);
       } else {
-        // Load from local file (for preview before upload)
-        loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
+        throw new Error('No PDF source provided');
       }
 
       this.pdfDocument = await loadingTask.promise;
       this.totalPages = this.pdfDocument.numPages;
       this.currentPage = 1;
-      
+
       console.log('PDF loaded successfully, total pages:', this.totalPages);
       await this.renderPage(1);
+      // Hide all other rendered pages just in case
+      this.goToPage(1);
       toast({ title: "Success", description: "PDF loaded successfully" });
     } catch (error) {
       console.error('Error loading PDF:', error);
@@ -375,6 +396,7 @@ export class PDFViewer {
     if (this.periodicSave) {
       clearInterval(this.periodicSave);
     }
+    window.removeEventListener('resize', this.handleResize);
     this.pages.forEach((page) => {
       page.drawingCanvas.dispose();
     });

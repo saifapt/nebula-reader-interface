@@ -70,7 +70,7 @@ export const ViewerPanel = ({
       try {
         console.log('Loading PDF with ID:', pdfData.id);
         // Load PDF from Supabase storage using PDF ID
-        await pdfViewerRef.current.loadPDF('', pdfData.id);
+        await pdfViewerRef.current.loadPDF(null, pdfData.id);
         setPdfLoaded(true);
         setCurrentPdfId(pdfData.id);
         onPdfIdChange?.(pdfData.id);

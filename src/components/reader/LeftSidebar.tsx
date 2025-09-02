@@ -97,7 +97,7 @@ export const LeftSidebar = ({
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-y-auto">
       {/* Header */}
       <div className="p-4 border-b border-border flex items-center justify-between">
         <h2 className="font-semibold text-lg">Tools</h2>
