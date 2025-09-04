@@ -142,76 +142,74 @@ export const ViewerPanel = ({
         <div className="relative w-full h-full max-w-4xl max-h-full min-h-0">
           {/* PDF Viewer Container */}
           <div className="w-full h-full rounded-xl border-2 border-border bg-surface-dark shadow-elevated animated-border overflow-hidden relative min-h-0">
-            {pdfLoaded ? (
-              <>
-                {/* PDF Rendering Container */}
-                <div 
-                  ref={containerRef} 
-                  className="w-full h-full relative overflow-auto bg-white"
-                  style={{ minHeight: '400px' }}
-                />
-                
-                {/* Drawing Toolbar */}
-                {!isMobile && (
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-                    <DrawingToolbar
-                      currentTool={currentTool}
-                      onToolChange={handleToolChange}
-                      onAddShape={handleAddShape}
-                      className="bg-surface-dark/90 backdrop-blur-sm"
-                    />
-                  </div>
-                )}
-              </>
-            ) : (
-              /* Upload Placeholder */
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-dark to-surface-darker relative">
-                <div className="text-center p-4 max-w-md">
-                  <div className="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 mx-auto mb-4 sm:mb-6 rounded-full bg-gradient-primary flex items-center justify-center glow-primary">
-                    {isFlipbookMode ? (
-                      <BookOpen className="h-8 sm:h-10 md:h-12 w-8 sm:w-10 md:w-12 text-primary-foreground" />
-                    ) : (
-                      <FileText className="h-8 sm:h-10 md:h-12 w-8 sm:w-10 md:w-12 text-primary-foreground" />
-                    )}
-                  </div>
-                  
-                  <h3 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2">
-                    {isFlipbookMode ? "Flipbook Viewer" : "PDF Viewer"}
-                  </h3>
-                  <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base px-2">
-                    {isFlipbookMode
-                      ? "Interactive flipbook reading experience"
-                      : "High-quality PDF document viewer"}
-                  </p>
-                  
-                  {/* Mock Document Preview */}
-                  <div className="w-32 sm:w-40 md:w-48 h-40 sm:h-52 md:h-64 mx-auto bg-background/10 rounded-lg border border-border/50 flex items-center justify-center mb-4 sm:mb-6">
-                    <div className="text-center">
-                      <div className="w-12 sm:w-14 md:w-16 h-16 sm:h-18 md:h-20 mx-auto mb-2 sm:mb-3 bg-gradient-primary/20 rounded border border-primary/30"></div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Document Preview</p>
+              {/* PDF Rendering Container - always mounted so viewer can init */}
+              <div 
+                ref={containerRef} 
+                className={`w-full h-full relative overflow-auto bg-white ${pdfLoaded ? '' : 'pointer-events-none opacity-0'}`}
+                style={{ minHeight: '400px' }}
+              />
+              
+              {/* Drawing Toolbar */}
+              {pdfLoaded && !isMobile && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+                  <DrawingToolbar
+                    currentTool={currentTool}
+                    onToolChange={handleToolChange}
+                    onAddShape={handleAddShape}
+                    className="bg-surface-dark/90 backdrop-blur-sm"
+                  />
+                </div>
+              )}
+
+              {/* Upload Placeholder Overlay */}
+              {!pdfLoaded && (
+                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-dark to-surface-darker z-10">
+                  <div className="text-center p-4 max-w-md">
+                    <div className="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 mx-auto mb-4 sm:mb-6 rounded-full bg-gradient-primary flex items-center justify-center glow-primary">
+                      {isFlipbookMode ? (
+                        <BookOpen className="h-8 sm:h-10 md:h-12 w-8 sm:w-10 md:w-12 text-primary-foreground" />
+                      ) : (
+                        <FileText className="h-8 sm:h-10 md:h-12 w-8 sm:w-10 md:w-12 text-primary-foreground" />
+                      )}
+                    </div>
+                    
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2">
+                      {isFlipbookMode ? "Flipbook Viewer" : "PDF Viewer"}
+                    </h3>
+                    <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base px-2">
+                      {isFlipbookMode
+                        ? "Interactive flipbook reading experience"
+                        : "High-quality PDF document viewer"}
+                    </p>
+                    
+                    {/* Mock Document Preview */}
+                    <div className="w-32 sm:w-40 md:w-48 h-40 sm:h-52 md:h-64 mx-auto bg-background/10 rounded-lg border border-border/50 flex items-center justify-center mb-4 sm:mb-6">
+                      <div className="text-center">
+                        <div className="w-12 sm:w-14 md:w-16 h-16 sm:h-18 md:h-20 mx-auto mb-2 sm:mb-3 bg-gradient-primary/20 rounded border border-primary/30"></div>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Document Preview</p>
+                      </div>
+                    </div>
+
+                    <div className="relative z-[100]">
+                      {user ? (
+                        <PDFUploadButton 
+                          onPDFUploaded={handlePDFUploaded}
+                          className="hover-glow bg-surface-light border-border text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3 relative z-[100]"
+                        />
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="hover-glow bg-surface-light border-border text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3"
+                          disabled
+                        >
+                          <RotateCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                          Please Login to Upload
+                        </Button>
+                      )}
                     </div>
                   </div>
-
-                  <div className="relative z-[100]">
-                    {user ? (
-                      <PDFUploadButton 
-                        onPDFUploaded={handlePDFUploaded}
-                        className="hover-glow bg-surface-light border-border text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3 relative z-[100]"
-                      />
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="hover-glow bg-surface-light border-border text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3"
-                        disabled
-                      >
-                        <RotateCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                        Please Login to Upload
-                      </Button>
-                    )}
-                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
 
           {/* Viewer Controls Overlay */}

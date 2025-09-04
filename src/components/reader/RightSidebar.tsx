@@ -125,7 +125,26 @@ export const RightSidebar = ({ isOpen, onClose, onToggle, isMobile, isDarkMode, 
   // Mobile: No mobile navigation content - removed as requested
 
   if (isMobile) {
-    return null; // No mobile right sidebar as requested
+    return (
+      <>
+        {/* Mobile Overlay */}
+        {isOpen && (
+          <div
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+            onClick={onClose}
+          />
+        )}
+
+        {/* Mobile Drawer (Right) */}
+        <div
+          className={`fixed right-0 top-16 bottom-0 w-80 bg-surface-dark border-l border-border transform transition-transform duration-300 z-50 ${
+            isOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          {chatbotContent}
+        </div>
+      </>
+    );
   }
 
   return (
