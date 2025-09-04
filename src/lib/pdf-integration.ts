@@ -99,6 +99,7 @@ export class PDFViewer {
   async renderPage(pageNumber: number): Promise<void> {
     if (!this.pdfDocument || pageNumber < 1 || pageNumber > this.totalPages) return;
 
+    console.log('Rendering page:', pageNumber);
     const page = await this.pdfDocument.getPage(pageNumber);
     const viewport = page.getViewport({ scale: this.scale * window.devicePixelRatio });
     
@@ -107,8 +108,6 @@ export class PDFViewer {
     if (!canvas) {
       canvas = document.createElement('canvas');
       canvas.setAttribute('data-page', pageNumber.toString());
-      canvas.style.width = `${viewport.width / window.devicePixelRatio}px`;
-      canvas.style.height = `${viewport.height / window.devicePixelRatio}px`;
       canvas.style.position = 'absolute';
       canvas.style.top = '0';
       canvas.style.left = '0';
@@ -136,7 +135,9 @@ export class PDFViewer {
       viewport: viewport
     };
 
+    console.log('Starting PDF render with context:', renderContext);
     await page.render(renderContext).promise;
+    console.log('PDF page rendered successfully');
     
     // Create drawing overlay
     await this.createDrawingOverlay(pageNumber, viewport);
@@ -332,10 +333,11 @@ export class PDFViewer {
         throw urlError;
       }
       
-      console.log('Signed URL created successfully');
+      console.log('Signed URL created successfully:', signedUrlData.signedUrl);
       return signedUrlData.signedUrl;
     } catch (error) {
       console.error('Error getting signed URL:', error);
+      toast({ title: "Error", description: "Failed to load PDF from storage", variant: "destructive" });
       return null;
     }
   }

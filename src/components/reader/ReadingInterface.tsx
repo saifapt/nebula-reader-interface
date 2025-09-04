@@ -22,6 +22,7 @@ export const ReadingInterface = () => {
   const [isFloatingMenuVisible, setIsFloatingMenuVisible] = useState(false);
   const [floatingMenuPosition, setFloatingMenuPosition] = useState({ x: 0, y: 0 });
   const [currentPage, setCurrentPage] = useState(1);
+  const [uploadedPdfData, setUploadedPdfData] = useState<any>(null);
   const totalPages = 200;
   const isMobile = useIsMobile();
 
@@ -141,6 +142,8 @@ export const ReadingInterface = () => {
             onBookmark={handleBookmark}
             onAddNote={handleAddNote}
             onPdfIdChange={setCurrentPdfId}
+            uploadedPdfData={uploadedPdfData}
+            onPdfUploaded={setUploadedPdfData}
           />
           
           {/* Mobile Controls Overlay */}

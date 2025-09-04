@@ -68,7 +68,7 @@ export const PDFUploadButton = ({ onPDFUploaded, className }: PDFUploadButtonPro
       <Button
         onClick={handleClick}
         disabled={loading}
-        className={className}
+        className={`${className} relative z-[100]`}
         variant="outline"
       >
         {loading ? (

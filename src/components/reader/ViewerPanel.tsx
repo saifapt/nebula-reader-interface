@@ -21,6 +21,8 @@ interface ViewerPanelProps {
   onAddNote?: () => void;
   externalPage?: number | null;
   onPdfIdChange?: (pdfId: string | null) => void;
+  uploadedPdfData?: any;
+  onPdfUploaded?: (pdfData: any) => void;
 }
 
 export const ViewerPanel = ({ 
@@ -34,6 +36,8 @@ export const ViewerPanel = ({
   onAddNote,
   externalPage,
   onPdfIdChange,
+  uploadedPdfData,
+  onPdfUploaded,
 }: ViewerPanelProps) => {
   const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,6 +70,8 @@ export const ViewerPanel = ({
 
   const handlePDFUploaded = async (pdfData: any) => {
     console.log('PDF uploaded, data received:', pdfData);
+    onPdfUploaded?.(pdfData);
+    
     if (pdfViewerRef.current && pdfData.id) {
       try {
         console.log('Loading PDF with ID:', pdfData.id);
@@ -83,6 +89,13 @@ export const ViewerPanel = ({
       }
     }
   };
+
+  // Handle external PDF data changes
+  useEffect(() => {
+    if (uploadedPdfData && !pdfLoaded) {
+      handlePDFUploaded(uploadedPdfData);
+    }
+  }, [uploadedPdfData]);
   const handlePageChange = async (page: number) => {
     if (pdfViewerRef.current) {
       await pdfViewerRef.current.goToPage(page);
@@ -179,11 +192,11 @@ export const ViewerPanel = ({
                     </div>
                   </div>
 
-                  <div className="relative z-50">
+                  <div className="relative z-[100]">
                     {user ? (
                       <PDFUploadButton 
                         onPDFUploaded={handlePDFUploaded}
-                        className="hover-glow bg-surface-light border-border text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3"
+                        className="hover-glow bg-surface-light border-border text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3 relative z-[100]"
                       />
                     ) : (
                       <Button
