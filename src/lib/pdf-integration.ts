@@ -3,9 +3,10 @@ import { Canvas as FabricCanvas, Circle, Rect, Line, Textbox, FabricObject } fro
 import debounce from 'lodash.debounce';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-// Configure PDF.js worker - use CDN with https and fallback
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker with proper Vite import
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
 export interface PDFPage {
   pageNumber: number;
@@ -67,16 +68,41 @@ export class PDFViewer {
       // Prefer loading by pdfId when provided
       if (pdfId) {
         this.pdfId = pdfId;
-        const signedUrl = await this.getSignedUrl(pdfId);
-        if (!signedUrl) throw new Error('Failed to get signed URL for PDF');
-        loadingTask = (pdfjsLib as any).getDocument(signedUrl);
+        
+        try {
+          // Try signed URL first
+          const signedUrl = await this.getSignedUrl(pdfId);
+          if (signedUrl) {
+            loadingTask = pdfjsLib.getDocument({ url: signedUrl, cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.149/cmaps/', cMapPacked: true });
+          } else {
+            throw new Error('Failed to get signed URL');
+          }
+        } catch (signedUrlError) {
+          console.warn('Signed URL failed, trying fallback methods:', signedUrlError);
+          
+          // Fallback: Try public URL
+          try {
+            const publicUrl = await this.getPublicUrl(pdfId);
+            if (publicUrl) {
+              loadingTask = pdfjsLib.getDocument({ url: publicUrl, cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.149/cmaps/', cMapPacked: true });
+            } else {
+              throw new Error('Failed to get public URL');
+            }
+          } catch (publicUrlError) {
+            console.warn('Public URL failed, trying ArrayBuffer fallback:', publicUrlError);
+            
+            // Final fallback: Fetch as ArrayBuffer
+            const arrayBuffer = await this.fetchAsArrayBuffer(pdfId);
+            loadingTask = pdfjsLib.getDocument({ data: arrayBuffer, cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.149/cmaps/', cMapPacked: true });
+          }
+        }
       } else if (typeof file === 'string' && file) {
         // Load from a direct URL string
-        loadingTask = (pdfjsLib as any).getDocument(file);
+        loadingTask = pdfjsLib.getDocument({ url: file, cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.149/cmaps/', cMapPacked: true });
       } else if (file instanceof File) {
         // Load from local file (preview before upload)
-        const url = URL.createObjectURL(file);
-        loadingTask = (pdfjsLib as any).getDocument(url);
+        const arrayBuffer = await file.arrayBuffer();
+        loadingTask = pdfjsLib.getDocument({ data: arrayBuffer, cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.149/cmaps/', cMapPacked: true });
       } else {
         throw new Error('No PDF source provided');
       }
@@ -128,6 +154,7 @@ export class PDFViewer {
     canvas.style.transform = `translate(-50%, -50%) scale(1)`;
     canvas.style.left = '50%';
     canvas.style.top = '50%';
+    canvas.style.display = 'block';
     
     const context = canvas.getContext('2d')!;
     const renderContext = {
@@ -170,11 +197,13 @@ export class PDFViewer {
       overlayCanvas.style.transform = pdfCanvas.style.transform;
       overlayCanvas.style.left = pdfCanvas.style.left;
       overlayCanvas.style.top = pdfCanvas.style.top;
+      overlayCanvas.style.display = 'block';
     } else {
       overlayCanvas.width = viewport.width / window.devicePixelRatio;
       overlayCanvas.height = viewport.height / window.devicePixelRatio;
       overlayCanvas.style.width = `${viewport.width / window.devicePixelRatio}px`;
       overlayCanvas.style.height = `${viewport.height / window.devicePixelRatio}px`;
+      overlayCanvas.style.display = 'block';
     }
 
     const fabricCanvas = new FabricCanvas(overlayCanvas, {
@@ -337,8 +366,70 @@ export class PDFViewer {
       return signedUrlData.signedUrl;
     } catch (error) {
       console.error('Error getting signed URL:', error);
-      toast({ title: "Error", description: "Failed to load PDF from storage", variant: "destructive" });
       return null;
+    }
+  }
+
+  private async getPublicUrl(pdfId: string): Promise<string | null> {
+    try {
+      console.log('Getting public URL for PDF ID:', pdfId);
+      
+      // Get PDF metadata
+      const { data: pdfData, error: metaError } = await supabase
+        .from('pdfs')
+        .select('*')
+        .eq('id', pdfId)
+        .single();
+
+      if (metaError || !pdfData) {
+        console.error('Error getting PDF metadata:', metaError);
+        throw metaError;
+      }
+
+      // Get public URL for the PDF file
+      const { data: publicUrlData } = supabase.storage
+        .from('pdfs')
+        .getPublicUrl(`${pdfData.uploaded_by}/${pdfData.filename}`);
+      
+      console.log('Public URL created successfully:', publicUrlData.publicUrl);
+      return publicUrlData.publicUrl;
+    } catch (error) {
+      console.error('Error getting public URL:', error);
+      return null;
+    }
+  }
+
+  private async fetchAsArrayBuffer(pdfId: string): Promise<ArrayBuffer> {
+    try {
+      console.log('Fetching PDF as ArrayBuffer for PDF ID:', pdfId);
+      
+      // Get PDF metadata
+      const { data: pdfData, error: metaError } = await supabase
+        .from('pdfs')
+        .select('*')
+        .eq('id', pdfId)
+        .single();
+
+      if (metaError || !pdfData) {
+        console.error('Error getting PDF metadata:', metaError);
+        throw metaError;
+      }
+
+      // Download the file directly
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('pdfs')
+        .download(`${pdfData.uploaded_by}/${pdfData.filename}`);
+
+      if (downloadError || !fileData) {
+        console.error('Error downloading PDF file:', downloadError);
+        throw downloadError;
+      }
+
+      console.log('PDF downloaded successfully as blob');
+      return await fileData.arrayBuffer();
+    } catch (error) {
+      console.error('Error fetching PDF as ArrayBuffer:', error);
+      throw error;
     }
   }
 
