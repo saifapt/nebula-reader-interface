@@ -146,7 +146,22 @@ export class PDFViewer {
 
     console.log('Rendering page:', pageNumber);
     const page = await this.pdfDocument.getPage(pageNumber);
-    const viewport = page.getViewport({ scale: this.scale * window.devicePixelRatio });
+    
+    // Calculate base viewport
+    const baseViewport = page.getViewport({ scale: 1.0 });
+    
+    // Calculate scale to fit container while maintaining aspect ratio
+    const containerRect = this.container.getBoundingClientRect();
+    const containerWidth = containerRect.width - 40; // Account for padding
+    const containerHeight = containerRect.height - 40;
+    
+    const scaleX = containerWidth / baseViewport.width;
+    const scaleY = containerHeight / baseViewport.height;
+    const baseScale = Math.min(scaleX, scaleY, 2.0); // Max base scale of 2.0
+    
+    // Apply user zoom on top of base scale
+    const finalScale = baseScale * this.scale;
+    const viewport = page.getViewport({ scale: finalScale * window.devicePixelRatio });
     
     // Create or get canvas
     let canvas = this.container.querySelector(`canvas[data-page="${pageNumber}"]`) as HTMLCanvasElement;
@@ -162,15 +177,10 @@ export class PDFViewer {
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     
-    // Make canvas responsive
-    const containerRect = this.container.getBoundingClientRect();
-    const scaleX = containerRect.width / (viewport.width / window.devicePixelRatio);
-    const scaleY = containerRect.height / (viewport.height / window.devicePixelRatio);
-    const scale = Math.min(scaleX, scaleY, 1);
-    
-    canvas.style.width = `${(viewport.width / window.devicePixelRatio) * scale}px`;
-    canvas.style.height = `${(viewport.height / window.devicePixelRatio) * scale}px`;
-    canvas.style.transform = `translate(-50%, -50%) scale(1)`;
+    // Set display size based on final scale
+    canvas.style.width = `${viewport.width / window.devicePixelRatio}px`;
+    canvas.style.height = `${viewport.height / window.devicePixelRatio}px`;
+    canvas.style.transform = `translate(-50%, -50%)`;
     canvas.style.left = '50%';
     canvas.style.top = '50%';
     canvas.style.display = 'block';
@@ -185,8 +195,8 @@ export class PDFViewer {
     await page.render(renderContext).promise;
     console.log('PDF page rendered successfully');
     
-    // Create drawing overlay
-    await this.createDrawingOverlay(pageNumber, viewport);
+    // Create drawing overlay with proper scaling
+    await this.createDrawingOverlay(pageNumber, page.getViewport({ scale: finalScale }));
     this.currentPage = pageNumber;
   }
 
@@ -513,6 +523,53 @@ export class PDFViewer {
       page.drawingCanvas.dispose();
     });
     this.pages.clear();
+  }
+
+  // Zoom functionality
+  zoomIn(): void {
+    this.setZoom(this.scale * 1.25);
+  }
+
+  zoomOut(): void {
+    this.setZoom(this.scale * 0.8);
+  }
+
+  resetZoom(): void {
+    this.setZoom(1.0);
+  }
+
+  private setZoom(newScale: number): void {
+    const minScale = 0.25;
+    const maxScale = 3.0;
+    this.scale = Math.min(Math.max(newScale, minScale), maxScale);
+    
+    // Re-render current page with new scale
+    if (this.pdfDocument && this.currentPage) {
+      this.rerenderCurrentPage();
+    }
+  }
+
+  private async rerenderCurrentPage(): Promise<void> {
+    if (!this.pdfDocument) return;
+    
+    const pageNum = this.currentPage;
+    // Remove existing canvases for current page
+    const pageCanvas = this.container.querySelector(`canvas[data-page="${pageNum}"]`);
+    const overlayCanvas = this.container.querySelector(`#drawing-overlay-${pageNum}`);
+    
+    if (pageCanvas) (pageCanvas as HTMLCanvasElement).remove();
+    if (overlayCanvas) {
+      const fabricCanvas = this.pages.get(pageNum)?.drawingCanvas;
+      if (fabricCanvas) fabricCanvas.dispose();
+      (overlayCanvas as HTMLCanvasElement).remove();
+    }
+    
+    this.pages.delete(pageNum);
+    await this.renderPage(pageNum);
+  }
+
+  getZoom(): number {
+    return this.scale;
   }
 
   getCurrentPage(): number { return this.currentPage; }

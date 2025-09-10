@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, FileText, RotateCw, Download, Share, Bot, Bookmark, StickyNote } from "lucide-react";
+import { BookOpen, FileText, RotateCw, Download, Share, Bot, Bookmark, StickyNote, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { PDFViewer, DrawingTool } from "@/lib/pdf-integration";
 import { PDFUploadButton } from "./PDFUploadButton";
 import { DrawingToolbar } from "./DrawingToolbar";
@@ -46,6 +46,7 @@ export const ViewerPanel = ({
   const [currentPdfId, setCurrentPdfId] = useState<string | null>(null);
   const [actualCurrentPage, setActualCurrentPage] = useState(1);
   const [actualTotalPages, setActualTotalPages] = useState(0);
+  const [currentZoom, setCurrentZoom] = useState(1.0);
   const [currentTool, setCurrentTool] = useState<DrawingTool>({
     type: 'pen',
     color: '#000000',
@@ -97,13 +98,26 @@ export const ViewerPanel = ({
     }
   }, [uploadedPdfData]);
   const handlePageChange = async (page: number) => {
-    if (!pdfViewerRef.current) return;
+    if (!pdfViewerRef.current || !pdfLoaded) return;
+    
     const max = actualTotalPages || pdfViewerRef.current.getTotalPages() || totalPages || 1;
-    const next = Math.min(Math.max(page, 1), max);
-    if (next === actualCurrentPage) return;
-    await pdfViewerRef.current.goToPage(next);
-    setActualCurrentPage(next);
-    onPageChange(next);
+    const targetPage = Math.min(Math.max(page, 1), max);
+    
+    if (targetPage === actualCurrentPage) {
+      console.log('Already on target page:', targetPage);
+      return;
+    }
+    
+    try {
+      console.log(`Navigating from page ${actualCurrentPage} to page ${targetPage}`);
+      await pdfViewerRef.current.goToPage(targetPage);
+      setActualCurrentPage(targetPage);
+      onPageChange(targetPage);
+      console.log('Successfully navigated to page:', targetPage);
+    } catch (error) {
+      console.error('Error navigating to page:', error);
+      toast({ title: "Navigation Error", description: "Failed to navigate to the requested page", variant: "destructive" });
+    }
   };
 
   const handleToolChange = (tool: DrawingTool) => {
@@ -131,6 +145,27 @@ export const ViewerPanel = ({
     if (noteText) {
       await addNote(actualCurrentPage, noteText);
       if (onAddNote) onAddNote();
+    }
+  };
+
+  const handleZoomIn = () => {
+    if (pdfViewerRef.current && pdfLoaded) {
+      pdfViewerRef.current.zoomIn();
+      setCurrentZoom(pdfViewerRef.current.getZoom());
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (pdfViewerRef.current && pdfLoaded) {
+      pdfViewerRef.current.zoomOut();
+      setCurrentZoom(pdfViewerRef.current.getZoom());
+    }
+  };
+
+  const handleResetZoom = () => {
+    if (pdfViewerRef.current && pdfLoaded) {
+      pdfViewerRef.current.resetZoom();
+      setCurrentZoom(pdfViewerRef.current.getZoom());
     }
   };
 
@@ -216,10 +251,42 @@ export const ViewerPanel = ({
 
           {/* Viewer Controls Overlay */}
           <div className="absolute top-4 right-4 flex gap-2 z-30">
+            {pdfLoaded && (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleZoomOut}
+                  className="bg-surface-dark/80 backdrop-blur-sm border-border hover-glow"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleResetZoom}
+                  className="bg-surface-dark/80 backdrop-blur-sm border-border hover-glow"
+                  title="Reset Zoom"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleZoomIn}
+                  className="bg-surface-dark/80 backdrop-blur-sm border-border hover-glow"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+              </>
+            )}
             <Button
               variant="outline"
               size="icon"
               className="bg-surface-dark/80 backdrop-blur-sm border-border hover-glow"
+              disabled={!pdfLoaded}
             >
               <Download className="h-4 w-4" />
             </Button>
@@ -227,6 +294,7 @@ export const ViewerPanel = ({
               variant="outline"
               size="icon"
               className="bg-surface-dark/80 backdrop-blur-sm border-border hover-glow"
+              disabled={!pdfLoaded}
             >
               <Share className="h-4 w-4" />
             </Button>
@@ -265,12 +333,15 @@ export const ViewerPanel = ({
               {isFlipbookMode ? "Flipbook" : "PDF"}
             </Badge>
             {!isMobile && pdfLoaded && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {isBookmarked(actualCurrentPage) && (
                   <Badge variant="secondary" className="bg-primary/20 text-primary">
                     Bookmarked
                   </Badge>
                 )}
+                <Badge variant="outline" className="bg-surface-light border-border text-xs">
+                  Zoom: {Math.round(currentZoom * 100)}%
+                </Badge>
                 <Button
                   variant="ghost"
                   size="sm"
