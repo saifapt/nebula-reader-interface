@@ -44,14 +44,7 @@ export class PDFViewer {
 
   private handleResize = debounce(() => {
     if (!this.pdfDocument) return;
-    const pageNum = this.currentPage;
-    // Remove existing canvases for this page so dimensions are recalculated
-    const pageCanvas = this.container.querySelector(`canvas[data-page="${pageNum}"]`);
-    const overlayCanvas = this.container.querySelector(`#drawing-overlay-${pageNum}`);
-    if (pageCanvas) (pageCanvas as HTMLCanvasElement).remove();
-    if (overlayCanvas) (overlayCanvas as HTMLCanvasElement).remove();
-    this.pages.delete(pageNum);
-    this.renderPage(pageNum);
+    this.rerenderAllPages();
   }, 150);
 
   async loadPDF(file: File | string | null, pdfId?: string): Promise<void> {
@@ -131,9 +124,9 @@ export class PDFViewer {
       this.currentPage = 1;
 
       console.log('PDF loaded successfully, total pages:', this.totalPages);
-      await this.renderPage(1);
-      // Hide all other rendered pages just in case
-      this.goToPage(1);
+      // Render all pages sequentially for a scrollable document
+      await this.renderAllPages();
+      await this.goToPage(1);
       toast({ title: "Success", description: "PDF loaded successfully" });
     } catch (error) {
       console.error('Error loading PDF:', error);
@@ -144,66 +137,103 @@ export class PDFViewer {
   async renderPage(pageNumber: number): Promise<void> {
     if (!this.pdfDocument || pageNumber < 1 || pageNumber > this.totalPages) return;
 
-    console.log('Rendering page:', pageNumber);
-    const page = await this.pdfDocument.getPage(pageNumber);
-    
-    // Calculate base viewport
-    const baseViewport = page.getViewport({ scale: 1.0 });
-    
-    // Calculate scale to fit container while maintaining aspect ratio
-    const containerRect = this.container.getBoundingClientRect();
-    const containerWidth = containerRect.width - 40; // Account for padding
-    const containerHeight = containerRect.height - 40;
-    
-    const scaleX = containerWidth / baseViewport.width;
-    const scaleY = containerHeight / baseViewport.height;
-    const baseScale = Math.min(scaleX, scaleY, 2.0); // Max base scale of 2.0
-    
-    // Apply user zoom on top of base scale
-    const finalScale = baseScale * this.scale;
-    const viewport = page.getViewport({ scale: finalScale * window.devicePixelRatio });
-    
-    // Create or get canvas
-    let canvas = this.container.querySelector(`canvas[data-page="${pageNumber}"]`) as HTMLCanvasElement;
-    if (!canvas) {
-      canvas = document.createElement('canvas');
-      canvas.setAttribute('data-page', pageNumber.toString());
-      canvas.style.position = 'absolute';
-      canvas.style.top = '0';
-      canvas.style.left = '0';
-      this.container.appendChild(canvas);
+    // If this page already exists, remove and re-render to apply new scale/layout
+    const existingCanvas = this.container.querySelector(`canvas[data-page="${pageNumber}"]`) as HTMLCanvasElement | null;
+    const existingOverlay = this.container.querySelector(`#drawing-overlay-${pageNumber}`) as HTMLCanvasElement | null;
+    const existingWrapper = this.container.querySelector(`[data-page-container="${pageNumber}"]`) as HTMLDivElement | null;
+    if (existingOverlay) {
+      const existingFabric = this.pages.get(pageNumber)?.drawingCanvas;
+      existingFabric?.dispose();
+      existingOverlay.remove();
+      this.pages.delete(pageNumber);
+    }
+    if (existingCanvas) existingCanvas.remove();
+    if (!existingWrapper) {
+      // Create a wrapper for this page so overlay can be absolutely positioned
+      const wrapper = document.createElement('div');
+      wrapper.setAttribute('data-page-container', pageNumber.toString());
+      wrapper.style.position = 'relative';
+      wrapper.style.margin = '0 auto 16px auto';
+      wrapper.style.width = '100%';
+      this.container.appendChild(wrapper);
     }
 
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    
-    // Set display size based on final scale
+    const page = await this.pdfDocument.getPage(pageNumber);
+
+    // Base viewport at scale 1
+    const baseViewport = page.getViewport({ scale: 1.0 });
+
+    // Fit to container width
+    const containerRect = this.container.getBoundingClientRect();
+    const containerWidth = Math.max(0, containerRect.width - 24); // some padding
+    const baseScale = containerWidth / baseViewport.width;
+    const finalScale = Math.min(baseScale * this.scale, 3.0);
+
+    const viewport = page.getViewport({ scale: finalScale * window.devicePixelRatio });
+
+    // Create canvas and append to wrapper
+    const wrapperEl = this.container.querySelector(`[data-page-container="${pageNumber}"]`) as HTMLDivElement;
+    let canvas = document.createElement('canvas');
+    canvas.setAttribute('data-page', pageNumber.toString());
+    canvas.style.display = 'block';
     canvas.style.width = `${viewport.width / window.devicePixelRatio}px`;
     canvas.style.height = `${viewport.height / window.devicePixelRatio}px`;
-    canvas.style.transform = `translate(-50%, -50%)`;
-    canvas.style.left = '50%';
-    canvas.style.top = '50%';
-    canvas.style.display = 'block';
-    
-    const context = canvas.getContext('2d')!;
-    const renderContext = {
-      canvasContext: context,
-      viewport: viewport
-    };
+    canvas.style.margin = '0 auto';
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    wrapperEl.appendChild(canvas);
 
-    console.log('Starting PDF render with context:', renderContext);
+    const context = canvas.getContext('2d')!;
+    const renderContext = { canvasContext: context, viewport };
     await page.render(renderContext).promise;
-    console.log('PDF page rendered successfully');
-    
-    // Create drawing overlay with proper scaling
+
+    // Create drawing overlay on top of this page
     await this.createDrawingOverlay(pageNumber, page.getViewport({ scale: finalScale }));
+
     this.currentPage = pageNumber;
+  }
+
+  // Render all pages sequentially to create a fully scrollable document
+  async renderAllPages(): Promise<void> {
+    if (!this.pdfDocument) return;
+    // Clear existing content
+    this.pages.forEach((p) => p.drawingCanvas.dispose());
+    this.pages.clear();
+    this.container.innerHTML = '';
+
+    for (let i = 1; i <= this.totalPages; i++) {
+      // eslint-disable-next-line no-await-in-loop
+      await this.renderPage(i);
+    }
+  }
+
+  // Re-render all pages (e.g., on resize or zoom)
+  async rerenderAllPages(): Promise<void> {
+    if (!this.pdfDocument) return;
+    const current = this.currentPage;
+    // Remove all existing page elements
+    this.pages.forEach((page) => page.drawingCanvas.dispose());
+    this.pages.clear();
+    const scrollTopBefore = this.container.scrollTop;
+    const scrollHeightBefore = this.container.scrollHeight || 1;
+
+    await this.renderAllPages();
+
+    // Try to maintain scroll position roughly by ratio
+    const ratio = scrollTopBefore / scrollHeightBefore;
+    const newScrollTop = ratio * (this.container.scrollHeight || 1);
+    this.container.scrollTop = newScrollTop;
+    this.currentPage = current;
   }
 
   private async createDrawingOverlay(pageNumber: number, viewport: any): Promise<void> {
     const overlayId = `drawing-overlay-${pageNumber}`;
     let overlayCanvas = this.container.querySelector(`#${overlayId}`) as HTMLCanvasElement;
-    
+
+    // Find the wrapper for this page
+    const pdfCanvas = this.container.querySelector(`canvas[data-page="${pageNumber}"]`) as HTMLCanvasElement;
+    const pageWrapper = (pdfCanvas?.parentElement as HTMLElement) ?? this.container;
+
     if (!overlayCanvas) {
       overlayCanvas = document.createElement('canvas');
       overlayCanvas.id = overlayId;
@@ -212,26 +242,23 @@ export class PDFViewer {
       overlayCanvas.style.left = '0';
       overlayCanvas.style.zIndex = '10';
       overlayCanvas.style.pointerEvents = 'auto';
-      this.container.appendChild(overlayCanvas);
+      pageWrapper.appendChild(overlayCanvas);
     }
 
-    // Make overlay responsive and match PDF canvas
-    const pdfCanvas = this.container.querySelector(`canvas[data-page="${pageNumber}"]`) as HTMLCanvasElement;
+    // Match PDF canvas size
     if (pdfCanvas) {
-      const rect = pdfCanvas.getBoundingClientRect();
-      overlayCanvas.width = parseInt(pdfCanvas.style.width) || viewport.width / window.devicePixelRatio;
-      overlayCanvas.height = parseInt(pdfCanvas.style.height) || viewport.height / window.devicePixelRatio;
-      overlayCanvas.style.width = pdfCanvas.style.width;
-      overlayCanvas.style.height = pdfCanvas.style.height;
-      overlayCanvas.style.transform = pdfCanvas.style.transform;
-      overlayCanvas.style.left = pdfCanvas.style.left;
-      overlayCanvas.style.top = pdfCanvas.style.top;
+      const displayWidth = pdfCanvas.width / window.devicePixelRatio;
+      const displayHeight = pdfCanvas.height / window.devicePixelRatio;
+      overlayCanvas.width = pdfCanvas.width;
+      overlayCanvas.height = pdfCanvas.height;
+      overlayCanvas.style.width = `${displayWidth}px`;
+      overlayCanvas.style.height = `${displayHeight}px`;
       overlayCanvas.style.display = 'block';
     } else {
-      overlayCanvas.width = viewport.width / window.devicePixelRatio;
-      overlayCanvas.height = viewport.height / window.devicePixelRatio;
-      overlayCanvas.style.width = `${viewport.width / window.devicePixelRatio}px`;
-      overlayCanvas.style.height = `${viewport.height / window.devicePixelRatio}px`;
+      overlayCanvas.width = viewport.width * window.devicePixelRatio;
+      overlayCanvas.height = viewport.height * window.devicePixelRatio;
+      overlayCanvas.style.width = `${viewport.width}px`;
+      overlayCanvas.style.height = `${viewport.height}px`;
       overlayCanvas.style.display = 'block';
     }
 
@@ -341,26 +368,25 @@ export class PDFViewer {
   }
 
   async goToPage(pageNumber: number): Promise<void> {
-    if (pageNumber < 1 || pageNumber > this.totalPages) return;
-    
-    // Hide current page
-    this.pages.forEach((page, num) => {
-      const pageCanvas = page.canvas;
-      const drawingCanvas = page.drawingCanvas.getElement();
-      if (num === pageNumber) {
-        pageCanvas.style.display = 'block';
-        drawingCanvas.style.display = 'block';
-      } else {
-        pageCanvas.style.display = 'none';
-        drawingCanvas.style.display = 'none';
-      }
-    });
+    if (!this.pdfDocument) return;
+    const target = Math.min(Math.max(pageNumber, 1), this.totalPages);
 
-    if (!this.pages.has(pageNumber)) {
-      await this.renderPage(pageNumber);
+    if (!this.pages.has(target)) {
+      await this.renderPage(target);
     }
-    
-    this.currentPage = pageNumber;
+
+    const pageWrapper = this.container.querySelector(`[data-page-container="${target}"]`) as HTMLElement | null;
+    if (pageWrapper) {
+      this.container.scrollTo({ top: pageWrapper.offsetTop, behavior: 'smooth' });
+      this.currentPage = target;
+    } else {
+      // Fallback: scroll to canvas
+      const canvas = this.container.querySelector(`canvas[data-page="${target}"]`) as HTMLElement | null;
+      if (canvas) {
+        this.container.scrollTo({ top: (canvas.parentElement as HTMLElement)?.offsetTop ?? canvas.offsetTop, behavior: 'smooth' });
+        this.currentPage = target;
+      }
+    }
   }
 
   private async getSignedUrl(pdfId: string): Promise<string | null> {
@@ -543,9 +569,9 @@ export class PDFViewer {
     const maxScale = 3.0;
     this.scale = Math.min(Math.max(newScale, minScale), maxScale);
     
-    // Re-render current page with new scale
-    if (this.pdfDocument && this.currentPage) {
-      this.rerenderCurrentPage();
+    // Re-render all pages with new scale
+    if (this.pdfDocument) {
+      this.rerenderAllPages();
     }
   }
 
