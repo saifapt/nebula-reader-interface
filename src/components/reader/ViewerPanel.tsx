@@ -97,11 +97,13 @@ export const ViewerPanel = ({
     }
   }, [uploadedPdfData]);
   const handlePageChange = async (page: number) => {
-    if (pdfViewerRef.current) {
-      await pdfViewerRef.current.goToPage(page);
-      setActualCurrentPage(page);
-      onPageChange(page);
-    }
+    if (!pdfViewerRef.current) return;
+    const max = actualTotalPages || pdfViewerRef.current.getTotalPages() || totalPages || 1;
+    const next = Math.min(Math.max(page, 1), max);
+    if (next === actualCurrentPage) return;
+    await pdfViewerRef.current.goToPage(next);
+    setActualCurrentPage(next);
+    onPageChange(next);
   };
 
   const handleToolChange = (tool: DrawingTool) => {

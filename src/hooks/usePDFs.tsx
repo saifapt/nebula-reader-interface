@@ -38,7 +38,7 @@ export const usePDFs = () => {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const loadingTask = await import('pdfjs-dist').then(pdfjsLib => {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+          pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.mjs`;
           return pdfjsLib.getDocument(arrayBuffer);
         });
         const pdfDoc = await loadingTask.promise;

@@ -3,10 +3,8 @@ import { Canvas as FabricCanvas, Circle, Rect, Line, Textbox, FabricObject } fro
 import debounce from 'lodash.debounce';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
-// Configure PDF.js worker with proper Vite import
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+// Configure PDF.js worker via unpkg .mjs (user-specified)
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://app.unpkg.com/pdfjs-dist@5.4.149/files/build/pdf.worker.mjs';
 
 export interface PDFPage {
   pageNumber: number;
@@ -107,7 +105,28 @@ export class PDFViewer {
         throw new Error('No PDF source provided');
       }
 
-      this.pdfDocument = await loadingTask.promise;
+      try {
+        this.pdfDocument = await loadingTask.promise;
+      } catch (e) {
+        try {
+          if (typeof file === 'string' && file) {
+            console.warn('Primary URL load failed, retrying with ArrayBuffer', e);
+            const resp = await fetch(file);
+            const arrayBuffer = await resp.arrayBuffer();
+            const fallbackTask = pdfjsLib.getDocument({ data: arrayBuffer, cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.149/cmaps/', cMapPacked: true });
+            this.pdfDocument = await fallbackTask.promise;
+          } else if (this.pdfId) {
+            console.warn('Primary load failed, retrying with direct download ArrayBuffer', e);
+            const arrayBuffer = await this.fetchAsArrayBuffer(this.pdfId);
+            const fallbackTask = pdfjsLib.getDocument({ data: arrayBuffer, cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.149/cmaps/', cMapPacked: true });
+            this.pdfDocument = await fallbackTask.promise;
+          } else {
+            throw e;
+          }
+        } catch (fallbackError) {
+          throw fallbackError;
+        }
+      }
       this.totalPages = this.pdfDocument.numPages;
       this.currentPage = 1;
 
