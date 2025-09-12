@@ -98,7 +98,23 @@ export const ViewerPanel = ({
     }
   }, [uploadedPdfData]);
   const handlePageChange = async (page: number) => {
-    if (!pdfViewerRef.current || !pdfLoaded) return;
+    if (!pdfViewerRef.current) {
+      toast({ 
+        title: "Navigation Error", 
+        description: "PDF viewer not initialized.",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    if (!pdfLoaded) {
+      toast({ 
+        title: "Navigation Error", 
+        description: "PDF not loaded yet.",
+        variant: "destructive" 
+      });
+      return;
+    }
     
     const max = actualTotalPages || pdfViewerRef.current.getTotalPages() || totalPages || 1;
     const targetPage = Math.min(Math.max(page, 1), max);
@@ -109,14 +125,19 @@ export const ViewerPanel = ({
     }
     
     try {
-      console.log(`Navigating from page ${actualCurrentPage} to page ${targetPage}`);
+      console.log(`Navigating from page ${actualCurrentPage} to page ${targetPage} (total: ${max})`);
       await pdfViewerRef.current.goToPage(targetPage);
       setActualCurrentPage(targetPage);
       onPageChange(targetPage);
       console.log('Successfully navigated to page:', targetPage);
     } catch (error) {
       console.error('Error navigating to page:', error);
-      toast({ title: "Navigation Error", description: "Failed to navigate to the requested page", variant: "destructive" });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast({ 
+        title: "Navigation Error", 
+        description: `Failed to navigate to page ${targetPage}: ${errorMessage}`,
+        variant: "destructive" 
+      });
     }
   };
 
@@ -182,8 +203,8 @@ export const ViewerPanel = ({
               {/* PDF Rendering Container - always mounted so viewer can init */}
               <div 
                 ref={containerRef} 
-                className={`w-full h-full relative overflow-auto bg-white ${pdfLoaded ? '' : 'pointer-events-none opacity-0'}`}
-                style={{ minHeight: '400px' }}
+                className={`w-full h-full relative bg-white ${pdfLoaded ? '' : 'pointer-events-none opacity-0'}`}
+                style={{ minHeight: '400px', height: '100%', overflowY: 'auto' }}
               />
               
               {/* Drawing Toolbar */}

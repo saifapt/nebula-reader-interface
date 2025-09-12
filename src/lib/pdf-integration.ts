@@ -49,6 +49,8 @@ export class PDFViewer {
 
   async loadPDF(file: File | string | null, pdfId?: string): Promise<void> {
     try {
+      console.log('Starting PDF load...', { file: file instanceof File ? file.name : file, pdfId });
+      
       // Clean up any previous document and canvases
       this.pages.forEach((page) => page.drawingCanvas.dispose());
       this.pages.clear();
@@ -126,8 +128,11 @@ export class PDFViewer {
       console.log('PDF loaded successfully, total pages:', this.totalPages);
       // Render all pages sequentially for a scrollable document
       await this.renderAllPages();
+      console.log('All pages rendered, page set size:', this.pages.size);
+      
+      // Navigate to first page to ensure proper positioning
       await this.goToPage(1);
-      toast({ title: "Success", description: "PDF loaded successfully" });
+      toast({ title: "Success", description: `PDF loaded successfully - ${this.totalPages} pages` });
     } catch (error) {
       console.error('Error loading PDF:', error);
       toast({ title: "Error", description: "Failed to load PDF", variant: "destructive" });
@@ -135,12 +140,18 @@ export class PDFViewer {
   }
 
   async renderPage(pageNumber: number): Promise<void> {
-    if (!this.pdfDocument || pageNumber < 1 || pageNumber > this.totalPages) return;
+    if (!this.pdfDocument || pageNumber < 1 || pageNumber > this.totalPages) {
+      console.warn('Cannot render page:', { pageNumber, hasPDF: !!this.pdfDocument, totalPages: this.totalPages });
+      return;
+    }
+
+    console.log('Rendering page:', pageNumber);
 
     // If this page already exists, remove and re-render to apply new scale/layout
     const existingCanvas = this.container.querySelector(`canvas[data-page="${pageNumber}"]`) as HTMLCanvasElement | null;
     const existingOverlay = this.container.querySelector(`#drawing-overlay-${pageNumber}`) as HTMLCanvasElement | null;
     const existingWrapper = this.container.querySelector(`[data-page-container="${pageNumber}"]`) as HTMLDivElement | null;
+    
     if (existingOverlay) {
       const existingFabric = this.pages.get(pageNumber)?.drawingCanvas;
       existingFabric?.dispose();
@@ -148,9 +159,11 @@ export class PDFViewer {
       this.pages.delete(pageNumber);
     }
     if (existingCanvas) existingCanvas.remove();
-    if (!existingWrapper) {
-      // Create a wrapper for this page so overlay can be absolutely positioned
-      const wrapper = document.createElement('div');
+    
+    // Always ensure wrapper exists
+    let wrapper = existingWrapper;
+    if (!wrapper) {
+      wrapper = document.createElement('div');
       wrapper.setAttribute('data-page-container', pageNumber.toString());
       wrapper.style.position = 'relative';
       wrapper.style.margin = '0 auto 16px auto';
@@ -173,6 +186,10 @@ export class PDFViewer {
 
     // Create canvas and append to wrapper
     const wrapperEl = this.container.querySelector(`[data-page-container="${pageNumber}"]`) as HTMLDivElement;
+    if (!wrapperEl) {
+      throw new Error(`Wrapper element not found for page ${pageNumber}`);
+    }
+    
     let canvas = document.createElement('canvas');
     canvas.setAttribute('data-page', pageNumber.toString());
     canvas.style.display = 'block';
@@ -190,7 +207,7 @@ export class PDFViewer {
     // Create drawing overlay on top of this page
     await this.createDrawingOverlay(pageNumber, page.getViewport({ scale: finalScale }));
 
-    this.currentPage = pageNumber;
+    console.log('Page rendered successfully:', pageNumber);
   }
 
   // Render all pages sequentially to create a fully scrollable document
@@ -368,25 +385,51 @@ export class PDFViewer {
   }
 
   async goToPage(pageNumber: number): Promise<void> {
-    if (!this.pdfDocument) return;
+    if (!this.pdfDocument) {
+      console.error('No PDF document loaded');
+      throw new Error('No PDF document loaded');
+    }
+    
     const target = Math.min(Math.max(pageNumber, 1), this.totalPages);
+    console.log('Navigating to page:', target, 'from current:', this.currentPage);
 
+    // Ensure page is rendered
     if (!this.pages.has(target)) {
+      console.log('Page not rendered, rendering now:', target);
       await this.renderPage(target);
     }
 
+    // Look for page wrapper first
     const pageWrapper = this.container.querySelector(`[data-page-container="${target}"]`) as HTMLElement | null;
     if (pageWrapper) {
+      console.log('Found page wrapper, scrolling to:', pageWrapper.offsetTop);
       this.container.scrollTo({ top: pageWrapper.offsetTop, behavior: 'smooth' });
       this.currentPage = target;
-    } else {
-      // Fallback: scroll to canvas
-      const canvas = this.container.querySelector(`canvas[data-page="${target}"]`) as HTMLElement | null;
-      if (canvas) {
-        this.container.scrollTo({ top: (canvas.parentElement as HTMLElement)?.offsetTop ?? canvas.offsetTop, behavior: 'smooth' });
-        this.currentPage = target;
-      }
+      console.log('Navigation successful to page:', target);
+      return;
     }
+
+    // Fallback: look for canvas
+    const canvas = this.container.querySelector(`canvas[data-page="${target}"]`) as HTMLElement | null;
+    if (canvas && canvas.parentElement) {
+      console.log('Found canvas, scrolling to parent:', canvas.parentElement.offsetTop);
+      this.container.scrollTo({ top: canvas.parentElement.offsetTop, behavior: 'smooth' });
+      this.currentPage = target;
+      console.log('Navigation successful to page (canvas fallback):', target);
+      return;
+    }
+
+    // If we get here, something went wrong
+    const debugInfo = {
+      target,
+      totalPages: this.totalPages,
+      renderedPages: Array.from(this.pages.keys()),
+      containerChildren: this.container.children.length,
+      wrapperExists: !!pageWrapper,
+      canvasExists: !!canvas
+    };
+    console.error('Failed to navigate to page:', debugInfo);
+    throw new Error(`Failed to navigate to page ${target}. Debug info: ${JSON.stringify(debugInfo)}`);
   }
 
   private async getSignedUrl(pdfId: string): Promise<string | null> {
