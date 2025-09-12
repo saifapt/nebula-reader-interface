@@ -196,8 +196,8 @@ export const ViewerPanel = ({
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Viewer Container */}
-      <div className="flex-1 p-3 sm:p-6 flex items-center justify-center min-h-0">
-        <div className="relative w-full h-full max-w-4xl max-h-full min-h-0">
+      <div className="flex-1 p-2 xs:p-3 sm:p-6 flex items-center justify-center min-h-0">
+        <div className="relative w-full h-full max-w-4xl max-h-full min-h-[300px] xs:min-h-[400px] sm:min-h-[500px]">
           {/* PDF Viewer Container */}
           <div className="w-full h-full rounded-xl border-2 border-border bg-surface-dark shadow-elevated animated-border overflow-hidden relative min-h-0">
               {/* PDF Rendering Container - always mounted so viewer can init */}
@@ -221,46 +221,51 @@ export const ViewerPanel = ({
 
               {/* Upload Placeholder Overlay */}
               {!pdfLoaded && (
-                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-dark to-surface-darker z-10">
-                  <div className="text-center p-4 max-w-md">
-                    <div className="w-16 sm:w-20 md:w-24 h-16 sm:h-20 md:h-24 mx-auto mb-4 sm:mb-6 rounded-full bg-gradient-primary flex items-center justify-center glow-primary">
+                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-surface-dark to-surface-darker z-10 overflow-y-auto">
+                  <div className="text-center p-4 w-full max-w-sm mx-auto min-h-full flex flex-col justify-center">
+                    {/* Main Icon - Responsive sizing with container queries */}
+                    <div className="w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 mx-auto mb-3 sm:mb-4 md:mb-6 rounded-full bg-gradient-primary flex items-center justify-center glow-primary flex-shrink-0">
                       {isFlipbookMode ? (
-                        <BookOpen className="h-8 sm:h-10 md:h-12 w-8 sm:w-10 md:w-12 text-primary-foreground" />
+                        <BookOpen className="h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-primary-foreground" />
                       ) : (
-                        <FileText className="h-8 sm:h-10 md:h-12 w-8 sm:w-10 md:w-12 text-primary-foreground" />
+                        <FileText className="h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-primary-foreground" />
                       )}
                     </div>
                     
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2">
+                    {/* Title - Responsive typography */}
+                    <h3 className="text-base xs:text-lg sm:text-xl md:text-2xl font-semibold mb-2 leading-tight">
                       {isFlipbookMode ? "Flipbook Viewer" : "PDF Viewer"}
                     </h3>
-                    <p className="text-muted-foreground mb-4 sm:mb-6 text-sm sm:text-base px-2">
+                    
+                    {/* Description - Responsive text */}
+                    <p className="text-muted-foreground mb-3 sm:mb-4 md:mb-6 text-xs xs:text-sm sm:text-base px-2 leading-relaxed">
                       {isFlipbookMode
                         ? "Interactive flipbook reading experience"
                         : "High-quality PDF document viewer"}
                     </p>
                     
-                    {/* Mock Document Preview */}
-                    <div className="w-32 sm:w-40 md:w-48 h-40 sm:h-52 md:h-64 mx-auto bg-background/10 rounded-lg border border-border/50 flex items-center justify-center mb-4 sm:mb-6">
+                    {/* Mock Document Preview - Responsive sizing */}
+                    <div className="w-24 h-32 xs:w-28 xs:h-36 sm:w-32 sm:h-40 md:w-40 md:h-52 lg:w-48 lg:h-64 mx-auto bg-background/10 rounded-lg border border-border/50 flex items-center justify-center mb-3 sm:mb-4 md:mb-6 flex-shrink-0">
                       <div className="text-center">
-                        <div className="w-12 sm:w-14 md:w-16 h-16 sm:h-18 md:h-20 mx-auto mb-2 sm:mb-3 bg-gradient-primary/20 rounded border border-primary/30"></div>
+                        <div className="w-8 h-12 xs:w-10 xs:h-14 sm:w-12 sm:h-16 md:w-14 md:h-18 lg:w-16 lg:h-20 mx-auto mb-1 xs:mb-2 sm:mb-3 bg-gradient-primary/20 rounded border border-primary/30"></div>
                         <p className="text-xs sm:text-sm text-muted-foreground">Document Preview</p>
                       </div>
                     </div>
 
-                    <div className="relative z-[100]">
+                    {/* Upload Button - Always visible and properly sized */}
+                    <div className="mt-auto pt-2">
                       {user ? (
                         <PDFUploadButton 
                           onPDFUploaded={handlePDFUploaded}
-                          className="hover-glow bg-surface-light border-border text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3 relative z-[100]"
+                          className="hover-glow bg-surface-light border-border text-xs xs:text-sm sm:text-base px-3 xs:px-4 py-2 sm:py-3 w-full max-w-xs mx-auto"
                         />
                       ) : (
                         <Button
                           variant="outline"
-                          className="hover-glow bg-surface-light border-border text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3"
+                          className="hover-glow bg-surface-light border-border text-xs xs:text-sm sm:text-base px-3 xs:px-4 py-2 sm:py-3 w-full max-w-xs mx-auto"
                           disabled
                         >
-                          <RotateCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                          <RotateCw className="h-3 w-3 xs:h-4 xs:w-4 mr-2" />
                           Please Login to Upload
                         </Button>
                       )}
